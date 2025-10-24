@@ -78,6 +78,13 @@ public class DayAssignmentService
     {
         var startDate = new DateTime(year, month, 1);
         var daysInMonth = DateTime.DaysInMonth(year, month);
+        var endDate = new DateTime(year, month, daysInMonth);
+        
+        // Fetch all existing assignments for the month in a single query
+        var existingAssignments = await _context.DayAssignments
+            .Where(d => d.Date >= startDate && d.Date <= endDate)
+            .ToDictionaryAsync(d => d.Date.Date, d => d);
+        
         var assignments = new List<DayAssignment>();
 
         for (int day = 1; day <= daysInMonth; day++)
@@ -85,8 +92,7 @@ public class DayAssignmentService
             var date = new DateTime(year, month, day);
             
             // Skip if already assigned
-            var existing = await GetDayAssignmentAsync(date);
-            if (existing != null)
+            if (existingAssignments.TryGetValue(date, out var existing))
             {
                 assignments.Add(existing);
                 continue;
