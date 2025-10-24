@@ -23,10 +23,12 @@ A web-based calendar application designed for parents who share 50/50 custody of
 ## Usage
 
 ### Getting Started
-1. Open `index.html` in your web browser
-2. Set the year you want to manage
-3. Enter parent names in the controls section
-4. Click "Update Names" to personalize the calendar
+1. Install dependencies: `npm install`
+2. Start the development server: `npm run dev`
+3. Open your browser to the URL shown (usually http://localhost:5173)
+4. Set the year you want to manage
+5. Enter parent names in the controls section
+6. Click "Update Names" to personalize the calendar
 
 ### Managing Days
 - **Click any day** to open the edit dialog
@@ -54,10 +56,29 @@ Each month has quick action buttons:
 ## Technical Details
 
 ### Technology Stack
-- Pure HTML5, CSS3, and JavaScript
-- No external dependencies
+- React 18
+- TypeScript
+- Vite (build tool)
+- CSS3
+- No external UI libraries
 - Uses browser localStorage for data persistence
 - Mobile-responsive design
+
+### Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
 
 ### Data Storage
 All data is stored locally in your browser using localStorage. The data includes:
@@ -68,9 +89,10 @@ All data is stored locally in your browser using localStorage. The data includes
 
 ### Browser Compatibility
 Works in all modern browsers that support:
-- ES6 JavaScript
+- ES2020 JavaScript
 - localStorage API
 - CSS Grid
+- React 18
 
 ## Privacy
 
