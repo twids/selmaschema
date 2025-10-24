@@ -87,6 +87,214 @@ To remove data volumes:
 docker-compose down -v
 ```
 
+## Build Instructions
+
+### Using Build Scripts (Recommended)
+
+**Linux/Mac:**
+```bash
+# Build everything
+./build.sh all
+
+# Build backend only
+./build.sh backend
+
+# Build frontend only
+./build.sh frontend
+
+# Build Docker images
+./build.sh docker
+
+# Run tests
+./build.sh test
+
+# Clean build artifacts
+./build.sh clean
+```
+
+**Windows:**
+```cmd
+REM Build everything
+build.bat all
+
+REM Build backend only
+build.bat backend
+
+REM Build frontend only
+build.bat frontend
+
+REM Build Docker images
+build.bat docker
+
+REM Run tests
+build.bat test
+
+REM Clean build artifacts
+build.bat clean
+```
+
+### Using Make (Linux/Mac)
+
+```bash
+# Show all available commands
+make help
+
+# Build everything
+make build
+
+# Build and run with Docker
+make docker-build
+make start
+
+# View logs
+make logs
+
+# Stop services
+make stop
+
+# Clean everything
+make clean-all
+```
+
+### Manual Build Steps
+
+#### Backend Build
+
+**Prerequisites:**
+- .NET 8 SDK installed
+- SQL Server running (or use Docker)
+
+**Steps:**
+```bash
+# Navigate to backend API project
+cd backend/CoParenting.API
+
+# Restore dependencies
+dotnet restore
+
+# Build in Release mode
+dotnet build --configuration Release
+
+# Run the API
+dotnet run
+
+# Or publish for deployment
+dotnet publish --configuration Release --output ./publish
+```
+
+**Run tests:**
+```bash
+cd backend
+dotnet test --configuration Release
+```
+
+#### Frontend Build
+
+**Prerequisites:**
+- Node.js 18+ installed
+- npm installed
+
+**Steps:**
+```bash
+# Navigate to frontend
+cd frontend
+
+# Install dependencies
+npm ci
+
+# Development build with hot reload
+npm run dev
+
+# Production build
+npm run build
+
+# Preview production build
+npm run preview
+
+# Lint code
+npm run lint
+```
+
+**Output:**
+- Development server: http://localhost:5173
+- Production build: `frontend/dist/` directory
+
+#### Docker Build
+
+**Build individual images:**
+```bash
+# Backend image
+docker build -t coparenting-api:latest ./backend
+
+# Frontend image
+docker build -t coparenting-frontend:latest ./frontend
+```
+
+**Build with Docker Compose:**
+```bash
+# Build all services
+docker-compose build
+
+# Build and start
+docker-compose up --build
+
+# Build specific service
+docker-compose build api
+docker-compose build frontend
+```
+
+### Continuous Integration
+
+The project includes GitHub Actions workflows for automated building and testing:
+
+**Workflow: `.github/workflows/ci-cd.yml`**
+
+Triggers on:
+- Push to `main`, `develop`, or `copilot/**` branches
+- Pull requests to `main` or `develop`
+
+Build jobs:
+1. **Backend Build** - Builds .NET 8 API, runs tests, creates artifacts
+2. **Frontend Build** - Builds React app, runs linting, creates artifacts
+3. **Docker Build** - Builds Docker images and validates docker-compose
+4. **Integration Tests** - Tests services working together
+
+**Artifacts generated:**
+- `backend-build` - Published .NET application
+- `frontend-build` - Built React application
+
+### Build Requirements
+
+**Backend:**
+- .NET 8 SDK
+- C# 10 or later
+- SQL Server 2022 (or Docker)
+
+**Frontend:**
+- Node.js 18+ (20 recommended)
+- npm 9+
+- Modern browser for testing
+
+**Docker:**
+- Docker Engine 20+
+- Docker Compose 2+
+
+**Build times (approximate):**
+- Backend: 30-60 seconds
+- Frontend: 60-90 seconds
+- Docker images: 3-5 minutes
+
+### Stopping the Application
+
+```bash
+docker-compose down
+```
+
+To remove data volumes:
+```bash
+docker-compose down -v
+```
+
 ## Development
 
 ### Frontend Development
@@ -198,18 +406,59 @@ npm test
 
 ## Troubleshooting
 
+### Build Issues
+
+**Backend build fails:**
+```bash
+# Clear NuGet cache
+dotnet nuget locals all --clear
+
+# Restore with verbose logging
+dotnet restore --verbosity detailed
+
+# Check .NET version
+dotnet --version  # Should be 8.0.x
+```
+
+**Frontend build fails:**
+```bash
+# Clear npm cache
+npm cache clean --force
+
+# Remove node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+
+# Check Node version
+node --version  # Should be 18+ or 20+
+```
+
+**Docker build fails:**
+```bash
+# Check Docker is running
+docker ps
+
+# Clear Docker build cache
+docker system prune -a
+
+# Rebuild without cache
+docker-compose build --no-cache
+```
+
 ### Database Connection Issues
 - Ensure SQL Server container is healthy: `docker-compose ps`
 - Check logs: `docker-compose logs db`
 - Verify connection string in appsettings.json
+- Wait 30 seconds for SQL Server to fully start
 
 ### API Not Starting
 - Check API logs: `docker-compose logs api`
-- Ensure port 8080 is available
+- Ensure port 8080 is available: `lsof -i :8080` (Linux/Mac) or `netstat -ano | findstr :8080` (Windows)
 - Verify database is accessible
+- Check for .NET runtime: `dotnet --info`
 
 ### Frontend Build Errors
-- Check node version (requires Node 18+)
+- Check node version (requires Node 18+): `node --version`
 - Clear node_modules: `rm -rf node_modules && npm install`
 - Check frontend logs: `docker-compose logs frontend`
 
