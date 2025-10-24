@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import { CalendarData, ParentNames, DayData } from './types';
 import Header from './components/Header';
@@ -9,6 +9,20 @@ import Statistics from './components/Statistics';
 import DayModal from './components/DayModal';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+interface DayAssignmentDto {
+  id: number;
+  date: string;
+  parent: string | null;
+  isVAB: boolean;
+  comment: string | null;
+}
+
+interface MonthDataDto {
+  year: number;
+  month: number;
+  days: DayAssignmentDto[];
+}
 
 function App() {
   const now = new Date();
@@ -21,16 +35,6 @@ function App() {
   });
   const [editingDate, setEditingDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // Load parent names from API on mount
-  useEffect(() => {
-    loadParentNames();
-  }, []);
-
-  // Load month data when year or month changes
-  useEffect(() => {
-    loadMonthData();
-  }, [currentYear, currentMonth]);
 
   const loadParentNames = async () => {
     try {
@@ -47,17 +51,21 @@ function App() {
     }
   };
 
-  const loadMonthData = async () => {
+  const loadMonthData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/days/${currentYear}/${currentMonth + 1}`);
       if (response.ok) {
-        const data = await response.json();
+        const data: MonthDataDto = await response.json();
         const monthData: CalendarData = {};
-        data.days.forEach((day: any) => {
+        data.days.forEach((day) => {
           const dateKey = new Date(day.date).toISOString().split('T')[0];
+          let parent: '' | 'parentA' | 'parentB' = '';
+          if (day.parent === 'A') parent = 'parentA';
+          else if (day.parent === 'B') parent = 'parentB';
+          
           monthData[dateKey] = {
-            parent: day.parent || '',
+            parent,
             isVAB: day.isVAB,
             comment: day.comment || '',
           };
@@ -69,7 +77,17 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentYear, currentMonth]);
+
+  // Load parent names from API on mount
+  useEffect(() => {
+    loadParentNames();
+  }, []);
+
+  // Load month data when year or month changes
+  useEffect(() => {
+    loadMonthData();
+  }, [currentYear, currentMonth, loadMonthData]);
 
   const updateParentNames = async (newNames: ParentNames) => {
     try {
@@ -92,13 +110,18 @@ function App() {
   const updateDay = async (dateKey: string, dayData: DayData) => {
     try {
       const date = new Date(dateKey);
+      // Map parentA/parentB to A/B for API
+      let apiParent: string | null = null;
+      if (dayData.parent === 'parentA') apiParent = 'A';
+      else if (dayData.parent === 'parentB') apiParent = 'B';
+      
       const response = await fetch(
         `${API_BASE_URL}/api/days/${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            parent: dayData.parent || null,
+            parent: apiParent,
             isVAB: dayData.isVAB,
             comment: dayData.comment || null,
           }),
