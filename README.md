@@ -1,50 +1,217 @@
 # Co-Parenting Calendar
 
-A web-based calendar application designed for parents who share 50/50 custody of their child. This tool helps you organize and manage your parenting schedule throughout the year.
+A full-stack web application for managing 50/50 co-parenting schedules with React/TypeScript frontend, C# backend, and SQL Server database.
+
+## Architecture
+
+### Technology Stack
+
+**Frontend:**
+- React 18 with TypeScript
+- Vite build tool
+- Nginx web server
+- Component-based architecture
+
+**Backend:**
+- .NET 8 C# Minimal API
+- Entity Framework Core (Database First)
+- SQL Server 2022
+- Well-structured layered architecture
+
+**Infrastructure:**
+- Docker & Docker Compose
+- SQL Server in container
+- Multi-stage Docker builds
+- Health checks and dependency management
 
 ## Features
 
 ### Core Functionality
-- **Full Year Calendar**: View and manage all 365 days of the year in a single interface
+- **Single Month View**: View and manage one month at a time with navigation
+- **Default Week Assignment**: Automatically assigns odd weeks (Monday-Sunday) to Parent A and even weeks to Parent B
 - **50/50 Split Management**: Easily assign days to either parent
 - **Day Comments**: Add notes and comments to specific days
 - **VAB Tracking**: Mark and track "Vård av Barn" (child care leave) days
 - **Day Swapping**: Change and reassign days between parents as needed
 
 ### Additional Features
-- **Custom Parent Names**: Personalize the calendar with actual parent names
+- **Custom Parent Names**: Personalize the calendar with actual parent names (stored in database)
 - **Month Actions**: 
+  - Initialize month with defaults (odd/even week pattern)
   - Fill entire months with one parent
   - Alternate days automatically
 - **Statistics Dashboard**: View summary of day distribution, VAB days, and comments
-- **Data Persistence**: All data is saved locally in your browser
+- **Data Persistence**: All data stored in SQL Server database
 - **Import/Export**: Backup and restore your calendar data
+- **API Documentation**: Swagger UI available in development mode
 
-## Usage
+## Quick Start
 
-### Getting Started
-1. Install dependencies: `npm install`
-2. Start the development server: `npm run dev`
-3. Open your browser to the URL shown (usually http://localhost:5173)
-4. Set the year you want to manage
-5. Enter parent names in the controls section
-6. Click "Update Names" to personalize the calendar
+### Prerequisites
+- Docker Desktop installed
+- Docker Compose installed
+- Ports 1433, 8080, and 3000 available
 
-### Managing Days
-- **Click any day** to open the edit dialog
-- **Assign to parent**: Select which parent has the child that day
-- **Mark as VAB**: Check the box to indicate child care leave
-- **Add comments**: Enter any notes or special information
-- **Save changes**: Click "Save" to store your updates
+### Running the Application
 
-### Month Management
-Each month has quick action buttons:
-- **Fill [Parent]**: Assign all days in the month to that parent
-- **Alternate Days**: Automatically alternate days between parents (odd days to Parent A, even days to Parent B)
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd selmaschema
+```
 
-### Data Management
-- **Export Data**: Download your calendar as a JSON file for backup
-- **Import Data**: Restore calendar from a previously exported file
+2. **Start all services**
+```bash
+docker-compose up --build
+```
+
+This will:
+- Start SQL Server database on port 1433
+- Initialize database schema
+- Start C# API on port 8080
+- Start React frontend on port 3000
+
+3. **Access the application**
+- Frontend: http://localhost:3000
+- API: http://localhost:8080
+- Swagger UI: http://localhost:8080/swagger
+
+### Stopping the Application
+
+```bash
+docker-compose down
+```
+
+To remove data volumes:
+```bash
+docker-compose down -v
+```
+
+## Development
+
+### Frontend Development
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend will be available at http://localhost:5173
+
+### Backend Development
+
+```bash
+cd backend/CoParenting.API
+dotnet restore
+dotnet run
+```
+
+The API will be available at http://localhost:8080
+
+### Database Migrations
+
+The database schema is automatically created using the init-db.sql script. The schema includes:
+
+**Tables:**
+- `DayAssignments` - Stores day-by-day parenting assignments
+- `Configurations` - Stores application settings (parent names, etc.)
+
+To modify the schema, update:
+1. Entity models in `backend/CoParenting.Core/Entities/`
+2. DbContext in `backend/CoParenting.Infrastructure/Data/`
+3. SQL script in `backend/init-db.sql`
+
+## Project Structure
+
+```
+selmaschema/
+├── backend/
+│   ├── CoParenting.API/          # API endpoints and configuration
+│   │   ├── Endpoints/            # Minimal API endpoints
+│   │   ├── Services/             # Business logic layer
+│   │   └── DTOs/                 # Data transfer objects
+│   ├── CoParenting.Core/         # Domain entities
+│   │   └── Entities/            
+│   ├── CoParenting.Infrastructure/ # Data access layer
+│   │   └── Data/                 # EF Core DbContext
+│   ├── init-db.sql               # Database initialization script
+│   ├── Dockerfile                # Backend container image
+│   └── wait-for-it.sh           # Database readiness script
+├── frontend/
+│   ├── src/
+│   │   ├── components/           # React components
+│   │   ├── types.ts              # TypeScript interfaces
+│   │   ├── App.tsx               # Main application
+│   │   └── main.tsx              # Entry point
+│   ├── Dockerfile                # Frontend container image
+│   ├── nginx.conf                # Nginx configuration
+│   └── package.json              # NPM dependencies
+└── docker-compose.yml            # Multi-container orchestration
+```
+
+## API Endpoints
+
+### Day Assignments
+- `GET /api/days/{year}/{month}` - Get all assignments for a month
+- `GET /api/days/{year}/{month}/{day}` - Get specific day assignment
+- `PUT /api/days/{year}/{month}/{day}` - Create/update day assignment
+- `POST /api/days/{year}/{month}/initialize` - Initialize month with default pattern
+
+### Configuration
+- `GET /api/config/parent-names` - Get parent names
+- `PUT /api/config/parent-names` - Update parent names
+
+### Statistics
+- `GET /api/statistics/{year}` - Get year statistics
+
+## Default Week Assignment Logic
+
+The application uses ISO 8601 week numbering (weeks start on Monday):
+- **Odd weeks (1, 3, 5...)**: Assigned to Parent A
+- **Even weeks (2, 4, 6...)**: Assigned to Parent B
+
+This provides a fair 50/50 split over time.
+
+## Database Configuration
+
+**Connection String:** (in docker-compose.yml and appsettings.json)
+```
+Server=db;Database=CoParentingCalendar;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+```
+
+**Security Note:** Change the default password in production!
+
+## Testing
+
+### Backend Tests
+```bash
+cd backend
+dotnet test
+```
+
+### Frontend Tests
+```bash
+cd frontend
+npm test
+```
+
+## Troubleshooting
+
+### Database Connection Issues
+- Ensure SQL Server container is healthy: `docker-compose ps`
+- Check logs: `docker-compose logs db`
+- Verify connection string in appsettings.json
+
+### API Not Starting
+- Check API logs: `docker-compose logs api`
+- Ensure port 8080 is available
+- Verify database is accessible
+
+### Frontend Build Errors
+- Check node version (requires Node 18+)
+- Clear node_modules: `rm -rf node_modules && npm install`
+- Check frontend logs: `docker-compose logs frontend`
 
 ## Color Coding
 
@@ -53,57 +220,9 @@ Each month has quick action buttons:
 - **Gray**: Unassigned days
 - **Yellow border**: VAB (child care leave) days
 
-## Technical Details
+## License
 
-### Technology Stack
-- React 18
-- TypeScript
-- Vite (build tool)
-- CSS3
-- No external UI libraries
-- Uses browser localStorage for data persistence
-- Mobile-responsive design
-
-### Development
-
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-### Data Storage
-All data is stored locally in your browser using localStorage. The data includes:
-- Day assignments (which parent)
-- VAB markings
-- Comments for each day
-- Parent names
-
-### Browser Compatibility
-Works in all modern browsers that support:
-- ES2020 JavaScript
-- localStorage API
-- CSS Grid
-- React 18
-
-## Privacy
-
-This application runs entirely in your browser. No data is sent to any server. All information is stored locally on your device.
-
-## Tips
-
-1. **Regular Backups**: Use the Export feature regularly to backup your calendar data
-2. **Year Planning**: Set up the entire year at once using the month fill features, then adjust individual days as needed
-3. **Comments**: Use comments to note special occasions, holidays, or schedule exceptions
-4. **VAB Tracking**: Mark VAB days to keep track of child care leave usage
+[Your License Here]
 
 ## Support
 

@@ -9,8 +9,9 @@ interface MonthProps {
   calendarData: CalendarData;
   parentNames: ParentNames;
   onDayClick: (dateKey: string) => void;
-  onFillMonth: (month: number, parent: 'parentA' | 'parentB') => void;
-  onAlternateMonth: (month: number) => void;
+  onFillMonth: (parent: 'parentA' | 'parentB') => void;
+  onAlternateMonth: () => void;
+  onInitializeMonth: () => void;
 }
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -36,6 +37,7 @@ export default function Month({
   onDayClick,
   onFillMonth,
   onAlternateMonth,
+  onInitializeMonth,
 }: MonthProps) {
   const daysInMonth = getDaysInMonth(currentYear, monthIndex);
   const firstDay = getFirstDayOfMonth(currentYear, monthIndex);
@@ -71,13 +73,14 @@ export default function Month({
           {monthName} {currentYear}
         </h2>
         <div className="month-actions">
-          <button onClick={() => onFillMonth(monthIndex, 'parentA')}>
+          <button onClick={() => onFillMonth('parentA')}>
             Fill {parentNames.parentA}
           </button>
-          <button onClick={() => onFillMonth(monthIndex, 'parentB')}>
+          <button onClick={() => onFillMonth('parentB')}>
             Fill {parentNames.parentB}
           </button>
-          <button onClick={() => onAlternateMonth(monthIndex)}>Alternate Days</button>
+          <button onClick={() => onAlternateMonth()}>Alternate Days</button>
+          <button onClick={() => onInitializeMonth()} className="init-button">Initialize with Defaults</button>
         </div>
       </div>
       <div className="calendar-grid">

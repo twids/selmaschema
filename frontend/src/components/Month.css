@@ -36,6 +36,14 @@
   background: #5568d3;
 }
 
+.month-actions button.init-button {
+  background: #28a745;
+}
+
+.month-actions button.init-button:hover {
+  background: #218838;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
