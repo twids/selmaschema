@@ -109,7 +109,7 @@ jobs:
         
     - name: Test Docker Compose
       run: |
-        docker-compose config
+        docker compose config
         echo "Docker Compose configuration is valid"
 
   # Integration test with Docker Compose
@@ -124,15 +124,15 @@ jobs:
       
     - name: Start services
       run: |
-        docker-compose up -d db
+        docker compose up -d db
         echo "Waiting for database to be ready..."
         sleep 30
         
     - name: Check services health
       run: |
-        docker-compose ps
+        docker compose ps
         
     - name: Stop services
       if: always()
       run: |
-        docker-compose down -v
+        docker compose down -v

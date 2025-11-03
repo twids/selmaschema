@@ -48,9 +48,10 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 ## Quick Start
 
 ### Prerequisites
-- Docker Desktop installed
-- Docker Compose installed
+- Docker Desktop installed (includes Docker Compose V2)
 - Ports 1433, 8080, and 3000 available
+
+**Note:** Modern Docker Desktop includes Docker Compose V2. Use `docker compose` (without hyphen) or `docker-compose` (with hyphen) depending on your Docker version.
 
 ### Running the Application
 
@@ -62,6 +63,10 @@ cd selmaschema
 
 2. **Start all services**
 ```bash
+# Docker Compose V2 (recommended)
+docker compose up --build
+
+# Or Docker Compose V1
 docker-compose up --build
 ```
 
@@ -79,12 +84,14 @@ This will:
 ### Stopping the Application
 
 ```bash
-docker-compose down
+docker compose down
+# or: docker-compose down
 ```
 
 To remove data volumes:
 ```bash
-docker-compose down -v
+docker compose down -v
+# or: docker-compose down -v
 ```
 
 ## Build Instructions
@@ -256,12 +263,17 @@ Triggers on:
 Build jobs:
 1. **Backend Build** - Builds .NET 8 API, runs tests, creates artifacts
 2. **Frontend Build** - Builds React app, runs linting, creates artifacts
-3. **Docker Build** - Builds Docker images and validates docker-compose
+3. **Docker Build** - Builds Docker images and validates Docker Compose configuration
 4. **Integration Tests** - Tests services working together
 
 **Artifacts generated:**
 - `backend-build` - Published .NET application
 - `frontend-build` - Built React application
+
+**Note on Docker Compose:**
+- CI/CD uses Docker Compose V2 (`docker compose` command)
+- Local development supports both `docker compose` (V2) and `docker-compose` (V1)
+- If using older Docker versions, install Docker Compose V1 separately
 
 ### Build Requirements
 
