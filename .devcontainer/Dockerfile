@@ -48,13 +48,13 @@ RUN if ! id -u ${USERNAME} > /dev/null 2>&1; then \
         && chmod 0440 /etc/sudoers.d/$USERNAME; \
     fi
 
-# Install common .NET tools
+# Install common .NET tools as vscode user
+USER ${USERNAME}
 RUN dotnet tool install --global dotnet-ef \
     && dotnet tool install --global dotnet-format
-
-# Add .NET tools to PATH
-ENV PATH="${PATH}:/root/.dotnet/tools"
-
+# Add .NET tools to PATH for vscode user
+ENV PATH="${PATH}:/home/vscode/.dotnet/tools"
+USER root
 # Set working directory
 WORKDIR /workspace
 
