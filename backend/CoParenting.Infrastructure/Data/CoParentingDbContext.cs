@@ -28,7 +28,7 @@ public class CoParentingDbContext : DbContext
             entity.HasIndex(e => e.Date).IsUnique();
             entity.Property(e => e.Parent).HasMaxLength(1);
             entity.Property(e => e.Comment).HasMaxLength(500);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         // Configuration configuration
@@ -39,7 +39,7 @@ public class CoParentingDbContext : DbContext
             entity.HasIndex(e => e.Key).IsUnique();
             entity.Property(e => e.Key).HasMaxLength(100).IsRequired();
             entity.Property(e => e.Value).HasMaxLength(500).IsRequired();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         // Seed default configuration

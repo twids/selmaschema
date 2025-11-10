@@ -1,25 +1,25 @@
 version: '3.8'
 
 services:
-  # SQL Server Database
+  # PostgreSQL Database
   db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: postgres:16-alpine
     container_name: coparenting-db
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=YourStrong@Passw0rd
-      - MSSQL_PID=Express
+      - POSTGRES_DB=CoParentingCalendar
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=YourStrong@Passw0rd
     ports:
-      - "1433:1433"
+      - "5432:5432"
     volumes:
-      - sqlserver-data:/var/opt/mssql
+      - postgres-data:/var/lib/postgresql/data
       - ./backend/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
-      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q "SELECT 1" || exit 1
+      test: ["CMD-SHELL", "pg_isready -U postgres -d CoParentingCalendar"]
       interval: 10s
       timeout: 5s
-      retries: 15
-      start_period: 30s
+      retries: 5
+      start_period: 10s
     networks:
       - coparenting-network
 
@@ -32,7 +32,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Server=db;Database=CoParentingCalendar;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+      - ConnectionStrings__DefaultConnection=Host=db;Database=CoParentingCalendar;Username=postgres;Password=YourStrong@Passw0rd
     ports:
       - "8080:8080"
     depends_on:
@@ -57,7 +57,7 @@ services:
     restart: unless-stopped
 
 volumes:
-  sqlserver-data:
+  postgres-data:
 
 networks:
   coparenting-network:

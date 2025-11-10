@@ -1,6 +1,6 @@
 # Co-Parenting Calendar
 
-A full-stack web application for managing 50/50 co-parenting schedules with React/TypeScript frontend, C# backend, and SQL Server database.
+A full-stack web application for managing 50/50 co-parenting schedules with React/TypeScript frontend, C# backend, and PostgreSQL database.
 
 ## Architecture
 
@@ -15,12 +15,12 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 **Backend:**
 - .NET 8 C# Minimal API
 - Entity Framework Core (Database First)
-- SQL Server 2022
+- PostgreSQL 16
 - Well-structured layered architecture
 
 **Infrastructure:**
 - Docker & Docker Compose
-- SQL Server in container
+- PostgreSQL in container
 - Multi-stage Docker builds
 - Health checks and dependency management
 
@@ -41,7 +41,7 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
   - Fill entire months with one parent
   - Alternate days automatically
 - **Statistics Dashboard**: View summary of day distribution, VAB days, and comments
-- **Data Persistence**: All data stored in SQL Server database
+- **Data Persistence**: All data stored in PostgreSQL database
 - **Import/Export**: Backup and restore your calendar data
 - **API Documentation**: Swagger UI available in development mode
 
@@ -49,7 +49,7 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 
 ### Prerequisites
 - Docker Desktop installed (includes Docker Compose V2)
-- Ports 1433, 8080, and 3000 available
+- Ports 5432, 8080, and 3000 available
 
 **Note:** Modern Docker Desktop includes Docker Compose V2. Use `docker compose` (without hyphen) or `docker-compose` (with hyphen) depending on your Docker version.
 
@@ -71,8 +71,8 @@ docker-compose up --build
 ```
 
 This will:
-- Start SQL Server database on port 1433
-- Initialize database schema
+- Start PostgreSQL database on port 5432
+- Initialize database schema automatically
 - Start C# API on port 8080
 - Start React frontend on port 3000
 
@@ -413,7 +413,7 @@ This provides a fair 50/50 split over time.
 
 **Connection String:** (in docker-compose.yml and appsettings.json)
 ```
-Server=db;Database=CoParentingCalendar;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+Host=db;Database=CoParentingCalendar;Username=postgres;Password=YourStrong@Passw0rd
 ```
 
 **Security Note:** Change the default password in production!
