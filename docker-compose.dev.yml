@@ -1,8 +1,6 @@
 # Development override for docker-compose.yml
 # Use: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
-version: '3.8'
-
 services:
   # Backend API with hot reload and debugging support
   api:
