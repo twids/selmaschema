@@ -1,30 +1,30 @@
--- Initial database schema for Co-Parenting Calendar
+-- Initial database schema for Co-Parenting Calendar (PostgreSQL)
 
 -- Create DayAssignments table
-CREATE TABLE DayAssignments (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    Date DATE NOT NULL UNIQUE,
-    Parent NVARCHAR(1) NULL,
-    IsVAB BIT NOT NULL DEFAULT 0,
-    Comment NVARCHAR(500) NULL,
-    CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    ModifiedAt DATETIME2 NULL
+CREATE TABLE "DayAssignments" (
+    "Id" SERIAL PRIMARY KEY,
+    "Date" DATE NOT NULL UNIQUE,
+    "Parent" VARCHAR(1) NULL,
+    "IsVAB" BOOLEAN NOT NULL DEFAULT FALSE,
+    "Comment" VARCHAR(500) NULL,
+    "CreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "ModifiedAt" TIMESTAMP NULL
 );
 
-CREATE INDEX IX_DayAssignments_Date ON DayAssignments(Date);
+CREATE INDEX "IX_DayAssignments_Date" ON "DayAssignments"("Date");
 
 -- Create Configurations table
-CREATE TABLE Configurations (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    [Key] NVARCHAR(100) NOT NULL UNIQUE,
-    Value NVARCHAR(500) NOT NULL,
-    CreatedAt DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
-    ModifiedAt DATETIME2 NULL
+CREATE TABLE "Configurations" (
+    "Id" SERIAL PRIMARY KEY,
+    "Key" VARCHAR(100) NOT NULL UNIQUE,
+    "Value" VARCHAR(500) NOT NULL,
+    "CreatedAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "ModifiedAt" TIMESTAMP NULL
 );
 
-CREATE INDEX IX_Configurations_Key ON Configurations([Key]);
+CREATE INDEX "IX_Configurations_Key" ON "Configurations"("Key");
 
 -- Seed default configurations
-INSERT INTO Configurations ([Key], Value, CreatedAt) VALUES
-('ParentAName', 'Parent A', GETUTCDATE()),
-('ParentBName', 'Parent B', GETUTCDATE());
+INSERT INTO "Configurations" ("Key", "Value", "CreatedAt") VALUES
+('ParentAName', 'Parent A', CURRENT_TIMESTAMP),
+('ParentBName', 'Parent B', CURRENT_TIMESTAMP);

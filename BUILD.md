@@ -17,7 +17,7 @@ This document provides comprehensive build instructions for the Co-Parenting Cal
 
 **Backend:**
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- SQL Server 2022 or Docker
+- PostgreSQL 16 or Docker
 
 **Frontend:**
 - [Node.js 20.x](https://nodejs.org/) (LTS recommended)
@@ -32,7 +32,7 @@ This document provides comprehensive build instructions for the Co-Parenting Cal
 - **OS**: Windows 10/11, macOS 10.15+, or Linux (Ubuntu 20.04+)
 - **RAM**: 8GB minimum, 16GB recommended
 - **Disk Space**: 10GB free space
-- **Ports**: 1433, 8080, 3000, 5173 must be available
+- **Ports**: 5432, 8080, 3000, 5173 must be available
 
 ## Quick Build
 

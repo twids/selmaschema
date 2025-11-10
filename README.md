@@ -1,6 +1,6 @@
 # Co-Parenting Calendar
 
-A full-stack web application for managing 50/50 co-parenting schedules with React/TypeScript frontend, C# backend, and SQL Server database.
+A full-stack web application for managing 50/50 co-parenting schedules with React/TypeScript frontend, C# backend, and PostgreSQL database.
 
 **🚀 New to the project?** Check out the [Quick Start Guide](./QUICKSTART.md) to get running in under 5 minutes!
 
@@ -17,12 +17,12 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 **Backend:**
 - .NET 8 C# Minimal API
 - Entity Framework Core (Database First)
-- SQL Server 2022
+- PostgreSQL 16
 - Well-structured layered architecture
 
 **Infrastructure:**
 - Docker & Docker Compose
-- SQL Server in container
+- PostgreSQL in container
 - Multi-stage Docker builds
 - Health checks and dependency management
 
@@ -43,7 +43,7 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
   - Fill entire months with one parent
   - Alternate days automatically
 - **Statistics Dashboard**: View summary of day distribution, VAB days, and comments
-- **Data Persistence**: All data stored in SQL Server database
+- **Data Persistence**: All data stored in PostgreSQL database
 - **Import/Export**: Backup and restore your calendar data
 - **API Documentation**: Swagger UI available in development mode
 
@@ -51,7 +51,7 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 
 ### Prerequisites
 - Docker Desktop installed (includes Docker Compose V2)
-- Ports 1433, 8080, and 3000 available
+- Ports 5432, 8080, and 3000 available
 
 **Note:** This project requires Docker Compose V2 (comes with Docker Desktop 3.0+ or Docker Engine 20.10+). Use `docker compose` (without hyphen). Docker Compose V1 (`docker-compose` with hyphen) is not supported due to the modern compose file syntax.
 
@@ -73,8 +73,8 @@ docker-compose up --build
 ```
 
 This will:
-- Start SQL Server database on port 1433
-- Initialize database schema
+- Start PostgreSQL database on port 5432
+- Initialize database schema automatically
 - Start C# API on port 8080
 - Start React frontend on port 3000
 
@@ -279,9 +279,25 @@ Images are tagged with:
 - `latest` - Latest stable version from main branch
 - `main-<commit-sha>` - Specific commit from main branch
 
+**Workflow: `.github/workflows/e2e-tests.yml`**
+
+Triggers on:
+- Push to `main`, `develop`, or `copilot/**` branches
+- Pull requests to `main` or `develop`
+
+E2E Testing jobs:
+1. **E2E Tests** - Runs comprehensive end-to-end tests with Playwright
+   - Starts all services with Docker Compose
+   - Waits for services to be healthy
+   - Runs full test suite covering all functionality
+   - Uploads test results and reports as artifacts
+   - **Fails PR builds if tests fail**
+
 **Artifacts generated:**
 - `backend-build` - Published .NET application
 - `frontend-build` - Built React application
+- `e2e-test-results` - Test execution results and screenshots
+- `e2e-test-report` - HTML test report (7 days retention)
 
 **Note on Docker Compose:**
 - CI/CD uses Docker Compose V2 (`docker compose` command)
@@ -436,7 +452,7 @@ This provides a fair 50/50 split over time.
 
 **Connection String:** (in docker-compose.yml and appsettings.json)
 ```
-Server=db;Database=CoParentingCalendar;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;
+Host=db;Database=CoParentingCalendar;Username=postgres;Password=YourStrong@Passw0rd
 ```
 
 **Security Note:** Change the default password in production!
@@ -454,6 +470,54 @@ dotnet test
 cd frontend
 npm test
 ```
+
+### End-to-End (E2E) Tests
+
+Comprehensive E2E tests cover all major functionality using Playwright.
+
+**Prerequisites:**
+- Application services running via `docker compose up`
+
+**Run tests:**
+```bash
+cd e2e-tests
+npm install
+npx playwright install chromium
+npm test
+```
+
+**View test report:**
+```bash
+cd e2e-tests
+npm run test:report
+```
+
+**Run tests in headed mode (with visible browser):**
+```bash
+cd e2e-tests
+npm run test:headed
+```
+
+**Debug tests:**
+```bash
+cd e2e-tests
+npm run test:debug
+```
+
+**Test Coverage:**
+- API health and configuration endpoints
+- Calendar navigation and UI
+- Day assignment operations
+- VAB (child care leave) tracking
+- Comments functionality
+- Parent names configuration
+- Statistics dashboard
+- Import/Export functionality
+
+See [e2e-tests/README.md](e2e-tests/README.md) for detailed documentation.
+
+**CI/CD Integration:**
+E2E tests run automatically on every pull request. Check the "E2E Tests" workflow in the GitHub Actions tab for results.
 
 ## Troubleshooting
 
