@@ -1,0 +1,45 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README.md
+LICENSE
+CHANGELOG.md
+
+# CI/CD
+.github
+
+# IDE
+.vscode
+.vs
+.idea
+*.swp
+*.swo
+*~
+
+# Build artifacts
+bin/
+obj/
+out/
+publish/
+
+# Test results
+TestResults/
+*.trx
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+
+# OS files
+.DS_Store
+Thumbs.db
