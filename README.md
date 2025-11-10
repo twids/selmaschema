@@ -2,6 +2,8 @@
 
 A full-stack web application for managing 50/50 co-parenting schedules with React/TypeScript frontend, C# backend, and SQL Server database.
 
+**🚀 New to the project?** Check out the [Quick Start Guide](./QUICKSTART.md) to get running in under 5 minutes!
+
 ## Architecture
 
 ### Technology Stack
