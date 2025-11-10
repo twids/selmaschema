@@ -267,8 +267,8 @@ function App() {
             calendarData={calendarData}
             parentNames={parentNames}
             onDayClick={setEditingDate}
-            onFillMonth={(parent) => fillMonth(parent, currentMonth, currentYear)}
-            onAlternateMonth={() => alternateMonth(currentMonth, currentYear)}
+            onFillMonth={fillMonth}
+            onAlternateMonth={alternateMonth}
             onInitializeMonth={initializeMonth}
           />
         )}

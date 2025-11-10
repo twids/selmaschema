@@ -9,8 +9,8 @@ interface MonthProps {
   calendarData: CalendarData;
   parentNames: ParentNames;
   onDayClick: (dateKey: string) => void;
-  onFillMonth: (parent: 'parentA' | 'parentB') => void;
-  onAlternateMonth: () => void;
+  onFillMonth: (parent: 'parentA' | 'parentB', monthIndex: number, year: number) => void;
+  onAlternateMonth: (monthIndex: number, year: number) => void;
   onInitializeMonth: () => void;
 }
 
@@ -73,13 +73,13 @@ export default function Month({
           {monthName} {currentYear}
         </h2>
         <div className="month-actions">
-          <button onClick={() => onFillMonth('parentA')}>
+          <button onClick={() => onFillMonth('parentA', monthIndex, currentYear)}>
             Fill {parentNames.parentA}
           </button>
-          <button onClick={() => onFillMonth('parentB')}>
+          <button onClick={() => onFillMonth('parentB', monthIndex, currentYear)}>
             Fill {parentNames.parentB}
           </button>
-          <button onClick={() => onAlternateMonth()}>Alternate Days</button>
+          <button onClick={() => onAlternateMonth(monthIndex, currentYear)}>Alternate Days</button>
           <button onClick={() => onInitializeMonth()} className="init-button">Initialize with Defaults</button>
         </div>
       </div>
