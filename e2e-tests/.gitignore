@@ -1,0 +1,10 @@
+# E2E Tests
+node_modules/
+playwright-report/
+test-results/
+*.log
+.env
+.DS_Store
+
+# Downloaded browsers
+/ms-playwright/

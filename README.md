@@ -266,9 +266,25 @@ Build jobs:
 3. **Docker Build** - Builds Docker images and validates Docker Compose configuration
 4. **Integration Tests** - Tests services working together
 
+**Workflow: `.github/workflows/e2e-tests.yml`**
+
+Triggers on:
+- Push to `main`, `develop`, or `copilot/**` branches
+- Pull requests to `main` or `develop`
+
+E2E Testing jobs:
+1. **E2E Tests** - Runs comprehensive end-to-end tests with Playwright
+   - Starts all services with Docker Compose
+   - Waits for services to be healthy
+   - Runs full test suite covering all functionality
+   - Uploads test results and reports as artifacts
+   - **Fails PR builds if tests fail**
+
 **Artifacts generated:**
 - `backend-build` - Published .NET application
 - `frontend-build` - Built React application
+- `e2e-test-results` - Test execution results and screenshots
+- `e2e-test-report` - HTML test report (7 days retention)
 
 **Note on Docker Compose:**
 - CI/CD uses Docker Compose V2 (`docker compose` command)
@@ -415,6 +431,54 @@ dotnet test
 cd frontend
 npm test
 ```
+
+### End-to-End (E2E) Tests
+
+Comprehensive E2E tests cover all major functionality using Playwright.
+
+**Prerequisites:**
+- Application services running via `docker compose up`
+
+**Run tests:**
+```bash
+cd e2e-tests
+npm install
+npx playwright install chromium
+npm test
+```
+
+**View test report:**
+```bash
+cd e2e-tests
+npm run test:report
+```
+
+**Run tests in headed mode (with visible browser):**
+```bash
+cd e2e-tests
+npm run test:headed
+```
+
+**Debug tests:**
+```bash
+cd e2e-tests
+npm run test:debug
+```
+
+**Test Coverage:**
+- API health and configuration endpoints
+- Calendar navigation and UI
+- Day assignment operations
+- VAB (child care leave) tracking
+- Comments functionality
+- Parent names configuration
+- Statistics dashboard
+- Import/Export functionality
+
+See [e2e-tests/README.md](e2e-tests/README.md) for detailed documentation.
+
+**CI/CD Integration:**
+E2E tests run automatically on every pull request. Check the "E2E Tests" workflow in the GitHub Actions tab for results.
 
 ## Troubleshooting
 
