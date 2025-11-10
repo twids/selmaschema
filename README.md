@@ -53,7 +53,7 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 - Docker Desktop installed (includes Docker Compose V2)
 - Ports 1433, 8080, and 3000 available
 
-**Note:** Modern Docker Desktop includes Docker Compose V2. Use `docker compose` (without hyphen) or `docker-compose` (with hyphen) depending on your Docker version.
+**Note:** This project requires Docker Compose V2 (comes with Docker Desktop 3.0+ or Docker Engine 20.10+). Use `docker compose` (without hyphen). Docker Compose V1 (`docker-compose` with hyphen) is not supported due to the modern compose file syntax.
 
 ### Running the Application
 

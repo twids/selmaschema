@@ -112,6 +112,31 @@ jobs:
         docker compose config
         echo "Docker Compose configuration is valid"
 
+  # Integration test with Docker Compose
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Start services
+      run: |
+        docker compose up -d db
+        echo "Waiting for database to be ready..."
+        sleep 30
+        
+    - name: Check services health
+      run: |
+        docker compose ps
+        
+    - name: Stop services
+      if: always()
+      run: |
+        docker compose down -v
+
   # Push Docker images to GitHub Container Registry (only on main branch)
   docker-publish:
     name: Publish Docker Images
@@ -177,28 +202,3 @@ jobs:
         labels: ${{ steps.meta-frontend.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-
-  # Integration test with Docker Compose
-  integration-test:
-    name: Integration Tests
-    runs-on: ubuntu-latest
-    needs: [docker-build]
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Start services
-      run: |
-        docker compose up -d db
-        echo "Waiting for database to be ready..."
-        sleep 30
-        
-    - name: Check services health
-      run: |
-        docker compose ps
-        
-    - name: Stop services
-      if: always()
-      run: |
-        docker compose down -v
