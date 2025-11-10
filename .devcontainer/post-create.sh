@@ -54,7 +54,7 @@ if cd frontend 2>/dev/null; then
         print_success "Frontend dependencies installed with pnpm"
     else
         print_warning "pnpm not found, using npm..."
-        npm ci
+        npm install
         print_success "Frontend dependencies installed with npm"
     fi
     cd ..
@@ -64,8 +64,8 @@ fi
 
 # Configure git
 print_status "Configuring git..."
-git config --global --add safe.directory /workspace
-git config --global core.autocrlf input
+git config --add safe.directory /workspace
+git config core.autocrlf input
 print_success "Git configured"
 
 # Display useful information
@@ -85,8 +85,8 @@ echo "    cd frontend && npm run build"
 echo "    cd frontend && npm run lint"
 echo ""
 echo "  Docker:"
-echo "    docker-compose up --build (Start all services)"
-echo "    docker-compose down (Stop all services)"
+echo "    docker compose up --build (Start all services)"
+echo "    docker compose down (Stop all services)"
 echo ""
 echo "  Build Scripts:"
 echo "    ./build.sh all (Build everything)"

@@ -98,10 +98,6 @@
     }
   },
 
-  "mounts": [
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-  ],
-
   "postCreateCommand": "bash .devcontainer/post-create.sh",
 
   "remoteEnv": {
@@ -110,7 +106,5 @@
     "DOTNET_SKIP_FIRST_TIME_EXPERIENCE": "1"
   },
 
-  "remoteUser": "vscode",
-
-  "postStartCommand": "git config --global --add safe.directory /workspace"
+  "remoteUser": "vscode"
 }
