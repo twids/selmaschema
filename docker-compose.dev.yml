@@ -1,0 +1,51 @@
+# Development override for docker-compose.yml
+# Use: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  # Backend API with hot reload and debugging support
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+      target: development
+    volumes:
+      # Mount source code for hot reload
+      - ./backend:/src:cached
+      # Preserve build artifacts in anonymous volumes for performance
+      - /src/CoParenting.API/bin
+      - /src/CoParenting.API/obj
+      - /src/CoParenting.Core/bin
+      - /src/CoParenting.Core/obj
+      - /src/CoParenting.Infrastructure/bin
+      - /src/CoParenting.Infrastructure/obj
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - DOTNET_USE_POLLING_FILE_WATCHER=1
+      - DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=1
+      # Enable debugging
+      - VSDBG_PATH=/vsdbg
+    ports:
+      # Expose additional port for debugging if needed
+      - "8080:8080"
+    command: dotnet watch run --project /src/CoParenting.API/CoParenting.API.csproj --no-launch-profile
+
+  # Frontend with hot reload (Vite dev server)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+      target: development
+    volumes:
+      # Mount source code for hot reload
+      - ./frontend:/app:cached
+      # Preserve node_modules in anonymous volume for performance
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:8080
+    ports:
+      - "5173:5173"  # Vite dev server default port
+    command: npm run dev -- --host 0.0.0.0
