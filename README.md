@@ -2,6 +2,8 @@
 
 A full-stack web application for managing 50/50 co-parenting schedules with React/TypeScript frontend, C# backend, and PostgreSQL database.
 
+**🚀 New to the project?** Check out the [Quick Start Guide](./QUICKSTART.md) to get running in under 5 minutes!
+
 ## Architecture
 
 ### Technology Stack
@@ -51,7 +53,7 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 - Docker Desktop installed (includes Docker Compose V2)
 - Ports 5432, 8080, and 3000 available
 
-**Note:** Modern Docker Desktop includes Docker Compose V2. Use `docker compose` (without hyphen) or `docker-compose` (with hyphen) depending on your Docker version.
+**Note:** This project requires Docker Compose V2 (comes with Docker Desktop 3.0+ or Docker Engine 20.10+). Use `docker compose` (without hyphen). Docker Compose V1 (`docker-compose` with hyphen) is not supported due to the modern compose file syntax.
 
 ### Running the Application
 
@@ -265,6 +267,17 @@ Build jobs:
 2. **Frontend Build** - Builds React app, runs linting, creates artifacts
 3. **Docker Build** - Builds Docker images and validates Docker Compose configuration
 4. **Integration Tests** - Tests services working together
+5. **Docker Publish** - Publishes images to GitHub Container Registry (on merge to main)
+
+**Docker Images:**
+
+After successful merge to `main`, Docker images are automatically published to GitHub Container Registry:
+- `ghcr.io/twids/selmaschema/coparenting-api:latest`
+- `ghcr.io/twids/selmaschema/coparenting-frontend:latest`
+
+Images are tagged with:
+- `latest` - Latest stable version from main branch
+- `main-<commit-sha>` - Specific commit from main branch
 
 **Workflow: `.github/workflows/e2e-tests.yml`**
 
@@ -325,25 +338,51 @@ docker-compose down -v
 
 ## Development
 
-### Frontend Development
+For detailed local development instructions, debugging, and troubleshooting, see the **[Development Guide](./DEVELOPMENT.md)**.
 
+### Quick Development Setup
+
+**Option 1: Docker with Hot Reload (Recommended for Development)**
+```bash
+# Start all services with hot reload enabled
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+# Access the application:
+# - Frontend (with Vite HMR): http://localhost:5173
+# - API (with dotnet watch): http://localhost:8080
+# - Swagger: http://localhost:8080/swagger
+```
+
+**Option 2: Native Development**
+
+Frontend:
 ```bash
 cd frontend
 npm install
 npm run dev
+# Available at http://localhost:5173
 ```
 
-The frontend will be available at http://localhost:5173
-
-### Backend Development
-
+Backend:
 ```bash
 cd backend/CoParenting.API
 dotnet restore
-dotnet run
+dotnet watch run
+# Available at http://localhost:8080
+# Note: Requires SQL Server running (see Option 1 for database setup)
 ```
 
-The API will be available at http://localhost:8080
+### VS Code Development
+
+1. Open project in Visual Studio Code
+2. Install recommended extensions (you'll be prompted)
+3. Press `F5` to start debugging
+4. Choose a launch configuration:
+   - **Full Stack (Backend + Frontend)** - Debug both simultaneously
+   - **Debug Backend API (.NET)** - Debug backend only
+   - **Debug Frontend (Chrome)** - Debug frontend in Chrome
+
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for comprehensive debugging guides and troubleshooting.
 
 ### Database Migrations
 
