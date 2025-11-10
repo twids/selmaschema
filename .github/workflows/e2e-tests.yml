@@ -37,16 +37,38 @@ jobs:
         cd e2e-tests
         npx playwright install --with-deps chromium
     
-    - name: Start services with Docker Compose
+    - name: Start database service
       run: |
-        docker compose up -d
-        echo "Waiting for services to be ready..."
-        sleep 30
+        docker compose up -d db
+        echo "Waiting for database to be healthy..."
+        
+        # Wait for database health check to pass (max 3 minutes)
+        for i in {1..36}; do
+          if docker compose ps db | grep -q "healthy"; then
+            echo "Database is healthy!"
+            break
+          fi
+          if [ $i -eq 36 ]; then
+            echo "Database failed to become healthy"
+            docker compose logs db
+            exit 1
+          fi
+          echo "Waiting for database health check... ($i/36)"
+          sleep 5
+        done
+        
+        echo "Database is ready, checking logs:"
+        docker compose logs db --tail=20
+    
+    - name: Start API and frontend services
+      run: |
+        docker compose up -d api frontend
+        echo "Waiting for services to start..."
+        sleep 10
     
     - name: Check services health
       run: |
         docker compose ps
-        docker compose logs --tail=50
         
         # Wait for API to be ready
         echo "Checking API health..."
@@ -54,6 +76,11 @@ jobs:
           if curl -f http://localhost:8080/api/config/parent-names >/dev/null 2>&1; then
             echo "API is ready!"
             break
+          fi
+          if [ $i -eq 30 ]; then
+            echo "API failed to become ready"
+            docker compose logs api
+            exit 1
           fi
           echo "Waiting for API... ($i/30)"
           sleep 2
@@ -66,9 +93,17 @@ jobs:
             echo "Frontend is ready!"
             break
           fi
+          if [ $i -eq 30 ]; then
+            echo "Frontend failed to become ready"
+            docker compose logs frontend
+            exit 1
+          fi
           echo "Waiting for frontend... ($i/30)"
           sleep 2
         done
+        
+        echo "All services are ready!"
+        docker compose ps
     
     - name: Run E2E tests
       run: |
