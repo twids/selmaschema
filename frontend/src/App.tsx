@@ -156,11 +156,15 @@ function App() {
     }
   };
 
-  const fillMonth = async (parent: 'parentA' | 'parentB') => {
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const fillMonth = async (
+    parent: 'parentA' | 'parentB',
+    month: number,
+    year: number
+  ) => {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
     
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateKey = getDateKey(currentYear, currentMonth, day);
+      const dateKey = getDateKey(year, month, day);
       const existing = calendarData[dateKey] || { parent: '', isVAB: false, comment: '' };
       await updateDay(dateKey, {
         ...existing,
