@@ -25,9 +25,5 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-# Wait for SQL Server to be ready
-COPY wait-for-it.sh /wait-for-it.sh
-RUN chmod +x /wait-for-it.sh
-
 EXPOSE 8080
-ENTRYPOINT ["/wait-for-it.sh", "db:1433", "--", "dotnet", "CoParenting.API.dll"]
+ENTRYPOINT ["dotnet", "CoParenting.API.dll"]
