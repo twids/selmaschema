@@ -175,11 +175,11 @@ function App() {
     await loadMonthData();
   };
 
-  const alternateMonth = async () => {
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const alternateMonth = async (month: number, year: number) => {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
     
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateKey = getDateKey(currentYear, currentMonth, day);
+      const dateKey = getDateKey(year, month, day);
       const existing = calendarData[dateKey] || { parent: '', isVAB: false, comment: '' };
       const parent = day % 2 === 1 ? 'parentA' : 'parentB';
       await updateDay(dateKey, {
@@ -267,8 +267,8 @@ function App() {
             calendarData={calendarData}
             parentNames={parentNames}
             onDayClick={setEditingDate}
-            onFillMonth={fillMonth}
-            onAlternateMonth={alternateMonth}
+            onFillMonth={(parent) => fillMonth(parent, currentMonth, currentYear)}
+            onAlternateMonth={() => alternateMonth(currentMonth, currentYear)}
             onInitializeMonth={initializeMonth}
           />
         )}
