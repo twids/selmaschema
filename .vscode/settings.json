@@ -33,6 +33,8 @@
   },
   "typescript.tsdk": "frontend/node_modules/typescript/lib",
   "dotnet.defaultSolution": "backend/CoParenting.sln",
+  // Note: OmniSharp settings below are only used if you choose the OmniSharp extension instead of C# Dev Kit
+  // C# Dev Kit uses a different language server and ignores these settings
   "omnisharp.enableRoslynAnalyzers": true,
   "omnisharp.enableEditorConfigSupport": true,
   "docker.showStartPage": false

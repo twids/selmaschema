@@ -19,7 +19,7 @@ This guide provides detailed instructions for setting up and running the Co-Pare
 
 - **Docker Desktop** (recommended): Simplest way to get started
   - [Download Docker Desktop](https://www.docker.com/products/docker-desktop)
-  - Includes Docker Engine 20+ and Docker Compose V2
+  - Requires Docker Engine 20.10+ and Docker Compose V2 (Docker Desktop 3.0+)
   - Available for Windows, macOS, and Linux
 
 **OR** for native development:
@@ -77,7 +77,7 @@ docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourStrong@Passw0rd" \
 # Terminal 2: Start Backend API
 cd backend/CoParenting.API
 dotnet restore
-dotnet run
+dotnet watch run
 
 # Terminal 3: Start Frontend
 cd frontend

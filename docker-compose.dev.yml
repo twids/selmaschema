@@ -10,7 +10,7 @@ services:
       target: development
     volumes:
       # Mount source code for hot reload
-      - ./backend:/src:cached
+      - ./backend:/src
       # Preserve build artifacts in anonymous volumes for performance
       - /src/CoParenting.API/bin
       - /src/CoParenting.API/obj
@@ -38,7 +38,7 @@ services:
       target: development
     volumes:
       # Mount source code for hot reload
-      - ./frontend:/app:cached
+      - ./frontend:/app
       # Preserve node_modules in anonymous volume for performance
       - /app/node_modules
     environment:

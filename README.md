@@ -353,6 +353,7 @@ cd backend/CoParenting.API
 dotnet restore
 dotnet watch run
 # Available at http://localhost:8080
+# Note: Requires SQL Server running (see Option 1 for database setup)
 ```
 
 ### VS Code Development

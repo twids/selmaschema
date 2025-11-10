@@ -61,7 +61,7 @@
       "processId": "${command:pickRemoteProcess}",
       "pipeTransport": {
         "pipeProgram": "docker",
-        "pipeArgs": ["exec", "-i", "coparenting-api"],
+        "pipeArgs": ["compose", "exec", "-T", "api"],
         "debuggerPath": "/vsdbg/vsdbg",
         "pipeCwd": "${workspaceFolder}"
       },

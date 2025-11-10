@@ -46,6 +46,9 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 **Option C: Native Development (No Docker)**
 ```bash
 # Terminal 1: Start database
+# WARNING: The password 'YourStrong@Passw0rd' is for local development only.
+# NEVER use this password in production environments.
+# For production, use a strong, unique password and store it securely (e.g., environment variables or secrets management).
 docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourStrong@Passw0rd" \
   -p 1433:1433 --name sql-server \
   mcr.microsoft.com/mssql/server:2022-latest
@@ -53,7 +56,7 @@ docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourStrong@Passw0rd" \
 # Terminal 2: Start backend
 cd backend/CoParenting.API
 dotnet restore
-dotnet run
+dotnet watch run
 
 # Terminal 3: Start frontend
 cd frontend
