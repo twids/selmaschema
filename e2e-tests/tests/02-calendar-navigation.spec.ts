@@ -109,7 +109,7 @@ test.describe('Calendar Navigation', () => {
     await expect(monthActions).toBeVisible();
     
     // Check for initialize button
-    await expect(page.locator('button:has-text("Initialize")')).toBeVisible();
+    await expect(page.locator('button:has-text("Initialize with Defaults")')).toBeVisible();
   });
 
   test('should change year via dropdown', async ({ page }) => {

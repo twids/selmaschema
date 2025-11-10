@@ -30,7 +30,7 @@ test.describe('Day Assignment Operations', () => {
 
   test('should initialize month with default pattern', async ({ page }) => {
     // Click initialize button
-    const initButton = page.locator('button:has-text("Initialize")');
+    const initButton = page.locator('button:has-text("Initialize with Defaults")');
     await initButton.click();
     
     // Wait for initialization to complete
@@ -44,7 +44,7 @@ test.describe('Day Assignment Operations', () => {
 
   test('should open modal when clicking a day', async ({ page }) => {
     // Initialize month first to ensure we have days
-    const initButton = page.locator('button:has-text("Initialize")');
+    const initButton = page.locator('button:has-text("Initialize with Defaults")');
     if (await initButton.count() > 0) {
       await initButton.click();
       await page.waitForTimeout(1000);
@@ -55,13 +55,13 @@ test.describe('Day Assignment Operations', () => {
     await dayCell.click();
     
     // Check that modal opened
-    const modal = page.locator('.modal, .day-modal, [role="dialog"]');
+    const modal = page.locator('.modal-backdrop');
     await expect(modal).toBeVisible({ timeout: 5000 });
   });
 
   test('should assign day to Parent A via modal', async ({ page }) => {
     // Initialize month
-    const initButton = page.locator('button:has-text("Initialize")');
+    const initButton = page.locator('button:has-text("Initialize with Defaults")');
     if (await initButton.count() > 0) {
       await initButton.click();
       await page.waitForTimeout(1000);
@@ -73,34 +73,29 @@ test.describe('Day Assignment Operations', () => {
     await dayCell.click();
     
     // Wait for modal
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
-    // Select Parent A (could be radio button or select)
-    const parentAOption = page.locator(
-      'input[type="radio"][value="parentA"], input[value="parentA"], button:has-text("Parent A")'
-    ).first();
+    // Select Parent A using dropdown
+    const parentSelect = page.locator('select#parentSelect');
+    await parentSelect.selectOption('parentA');
     
-    if (await parentAOption.count() > 0) {
-      await parentAOption.click();
-      
-      // Save the changes
-      const saveButton = page.locator('button:has-text("Save"), button[type="submit"]').first();
-      await saveButton.click();
-      
-      // Wait for modal to close
-      await page.waitForTimeout(1000);
-      
-      // Verify the day is now assigned to Parent A
-      // (visual verification - day should have appropriate styling)
-      const updatedDay = page.locator(`.day-cell:has-text("${dayNumber}")`).first();
-      const className = await updatedDay.getAttribute('class');
-      expect(className).toBeTruthy();
-    }
+    // Save the changes
+    const saveButton = page.locator('button.save-button');
+    await saveButton.click();
+    
+    // Wait for modal to close
+    await page.waitForTimeout(1000);
+    
+    // Verify the day is now assigned to Parent A
+    // (visual verification - day should have appropriate styling)
+    const updatedDay = page.locator(`.day-cell:has-text("${dayNumber}")`).first();
+    const className = await updatedDay.getAttribute('class');
+    expect(className).toBeTruthy();
   });
 
   test('should assign day to Parent B via modal', async ({ page }) => {
     // Initialize month
-    const initButton = page.locator('button:has-text("Initialize")');
+    const initButton = page.locator('button:has-text("Initialize with Defaults")');
     if (await initButton.count() > 0) {
       await initButton.click();
       await page.waitForTimeout(1000);
@@ -111,27 +106,22 @@ test.describe('Day Assignment Operations', () => {
     await dayCell.click();
     
     // Wait for modal
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
-    // Select Parent B
-    const parentBOption = page.locator(
-      'input[type="radio"][value="parentB"], input[value="parentB"], button:has-text("Parent B")'
-    ).first();
+    // Select Parent B using dropdown
+    const parentSelect = page.locator('select#parentSelect');
+    await parentSelect.selectOption('parentB');
     
-    if (await parentBOption.count() > 0) {
-      await parentBOption.click();
-      
-      // Save
-      const saveButton = page.locator('button:has-text("Save"), button[type="submit"]').first();
-      await saveButton.click();
-      
-      await page.waitForTimeout(1000);
-    }
+    // Save
+    const saveButton = page.locator('button.save-button');
+    await saveButton.click();
+    
+    await page.waitForTimeout(1000);
   });
 
   test('should close modal without saving changes', async ({ page }) => {
     // Initialize month
-    const initButton = page.locator('button:has-text("Initialize")');
+    const initButton = page.locator('button:has-text("Initialize with Defaults")');
     if (await initButton.count() > 0) {
       await initButton.click();
       await page.waitForTimeout(1000);
@@ -142,31 +132,23 @@ test.describe('Day Assignment Operations', () => {
     await dayCell.click();
     
     // Wait for modal
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
-    // Click close/cancel button
-    const closeButton = page.locator(
-      'button:has-text("Cancel"), button:has-text("Close"), button.close-button'
-    ).first();
-    
-    if (await closeButton.count() > 0) {
-      await closeButton.click();
-    } else {
-      // Try pressing Escape key
-      await page.keyboard.press('Escape');
-    }
+    // Click cancel button
+    const cancelButton = page.locator('button.cancel-button');
+    await cancelButton.click();
     
     // Wait for modal to close
     await page.waitForTimeout(500);
     
     // Verify modal is closed
-    const modal = page.locator('.modal, .day-modal, [role="dialog"]');
+    const modal = page.locator('.modal-backdrop');
     await expect(modal).not.toBeVisible();
   });
 
   test('should show visual feedback for assigned days', async ({ page }) => {
     // Initialize month
-    const initButton = page.locator('button:has-text("Initialize")');
+    const initButton = page.locator('button:has-text("Initialize with Defaults")');
     if (await initButton.count() > 0) {
       await initButton.click();
       await page.waitForTimeout(2000);
@@ -194,10 +176,9 @@ test.describe('Day Assignment Operations', () => {
   });
 
   test('should fill entire month with one parent', async ({ page }) => {
-    // Look for "Fill with Parent A" or similar button
-    const fillButton = page.locator(
-      'button:has-text("Fill with Parent A"), button:has-text("Fill Parent A"), button:has-text("Fill A")'
-    ).first();
+    // The button text includes the parent name dynamically
+    // Looking for "Fill Parent A" or "Fill" followed by parent name
+    const fillButton = page.locator('button').filter({ hasText: 'Fill' }).first();
     
     if (await fillButton.count() > 0) {
       await fillButton.click();
@@ -206,15 +187,15 @@ test.describe('Day Assignment Operations', () => {
       await page.waitForTimeout(3000);
       
       // Verify days are assigned
-      const assignedDays = page.locator('.day-cell.parent-a, .day-cell[data-parent="parentA"]');
+      const assignedDays = page.locator('.day-cell.parent-a, .day-cell.parent-b');
       const count = await assignedDays.count();
       expect(count).toBeGreaterThan(20); // Most days in a month
     }
   });
 
   test('should alternate days between parents', async ({ page }) => {
-    // Look for "Alternate" button
-    const alternateButton = page.locator('button:has-text("Alternate")').first();
+    // Look for "Alternate Days" button
+    const alternateButton = page.locator('button:has-text("Alternate Days")').first();
     
     if (await alternateButton.count() > 0) {
       await alternateButton.click();
@@ -223,8 +204,8 @@ test.describe('Day Assignment Operations', () => {
       await page.waitForTimeout(3000);
       
       // Verify days are assigned in alternating pattern
-      const parentADays = page.locator('.day-cell.parent-a, .day-cell[data-parent="parentA"]');
-      const parentBDays = page.locator('.day-cell.parent-b, .day-cell[data-parent="parentB"]');
+      const parentADays = page.locator('.day-cell.parent-a');
+      const parentBDays = page.locator('.day-cell.parent-b');
       
       const countA = await parentADays.count();
       const countB = await parentBDays.count();

@@ -50,7 +50,7 @@ test.describe('Import/Export Functionality', () => {
 
   test('should export calendar data', async ({ page }) => {
     // Initialize month to have data
-    const initButton = page.locator('button:has-text("Initialize")');
+    const initButton = page.locator('button:has-text("Initialize with Defaults")');
     if (await initButton.count() > 0) {
       await initButton.click();
       await page.waitForTimeout(2000);
@@ -149,7 +149,7 @@ test.describe('Import/Export Functionality', () => {
     // This is an integration test of export -> import cycle
     
     // Initialize month
-    const initButton = page.locator('button:has-text("Initialize")');
+    const initButton = page.locator('button:has-text("Initialize with Defaults")');
     if (await initButton.count() > 0) {
       await initButton.click();
       await page.waitForTimeout(2000);
@@ -159,10 +159,10 @@ test.describe('Import/Export Functionality', () => {
     const dayCell = page.locator('.day-cell').first();
     await dayCell.click();
     
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
     const commentInput = page.locator(
-      'textarea[name="comment"], textarea#comment, input[name="comment"], input#comment'
+      'textarea#commentInput'
     ).first();
     
     if (await commentInput.count() > 0) {
@@ -170,7 +170,7 @@ test.describe('Import/Export Functionality', () => {
       await commentInput.clear();
       await commentInput.fill(testComment);
       
-      const saveButton = page.locator('button:has-text("Save"), button[type="submit"]').first();
+      const saveButton = page.locator('button.save-button').first();
       await saveButton.click();
       await page.waitForTimeout(1000);
       

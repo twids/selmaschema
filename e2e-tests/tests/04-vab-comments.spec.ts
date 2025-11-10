@@ -24,7 +24,7 @@ test.describe('VAB and Comments', () => {
     await page.waitForSelector('.calendar-container', { timeout: config.defaultTimeout });
     
     // Initialize month if needed
-    const initButton = page.locator('button:has-text("Initialize")');
+    const initButton = page.locator('button:has-text("Initialize with Defaults")');
     if (await initButton.count() > 0) {
       await initButton.click();
       await page.waitForTimeout(1000);
@@ -41,11 +41,11 @@ test.describe('VAB and Comments', () => {
     await dayCell.click();
     
     // Wait for modal
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
     // Find and check VAB checkbox
     const vabCheckbox = page.locator(
-      'input[type="checkbox"][name="isVAB"], input[type="checkbox"][name="vab"], input#vab, input#isVAB'
+      'input[type="checkbox"]'
     ).first();
     
     if (await vabCheckbox.count() > 0) {
@@ -74,10 +74,10 @@ test.describe('VAB and Comments', () => {
     
     // First, mark it as VAB
     await dayCell.click();
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
     const vabCheckbox = page.locator(
-      'input[type="checkbox"][name="isVAB"], input[type="checkbox"][name="vab"], input#vab, input#isVAB'
+      'input[type="checkbox"]'
     ).first();
     
     if (await vabCheckbox.count() > 0) {
@@ -88,10 +88,10 @@ test.describe('VAB and Comments', () => {
       
       // Now unmark it
       await dayCell.click();
-      await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+      await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
       
       const vabCheckbox2 = page.locator(
-        'input[type="checkbox"][name="isVAB"], input[type="checkbox"][name="vab"], input#vab, input#isVAB'
+        'input[type="checkbox"]'
       ).first();
       
       await vabCheckbox2.uncheck();
@@ -110,7 +110,7 @@ test.describe('VAB and Comments', () => {
     await dayCell.click();
     
     // Wait for modal
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
     // Find comment input/textarea
     const commentInput = page.locator(
@@ -130,7 +130,7 @@ test.describe('VAB and Comments', () => {
       
       // Reopen to verify
       await dayCell.click();
-      await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+      await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
       
       const commentInput2 = page.locator(
         'textarea[name="comment"], textarea#comment, input[name="comment"], input#comment'
@@ -140,7 +140,7 @@ test.describe('VAB and Comments', () => {
       expect(commentValue).toBe(testComment);
       
       // Close modal
-      const closeButton = page.locator('button:has-text("Cancel"), button:has-text("Close")').first();
+      const closeButton = page.locator('button.cancel-button').first();
       if (await closeButton.count() > 0) {
         await closeButton.click();
       } else {
@@ -158,7 +158,7 @@ test.describe('VAB and Comments', () => {
     await dayCell.click();
     
     // Wait for modal
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
     const commentInput = page.locator(
       'textarea[name="comment"], textarea#comment, input[name="comment"], input#comment'
@@ -175,7 +175,7 @@ test.describe('VAB and Comments', () => {
       
       // Reopen and update
       await dayCell.click();
-      await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+      await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
       
       const commentInput2 = page.locator(
         'textarea[name="comment"], textarea#comment, input[name="comment"], input#comment'
@@ -190,7 +190,7 @@ test.describe('VAB and Comments', () => {
       
       // Verify update
       await dayCell.click();
-      await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+      await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
       
       const commentInput3 = page.locator(
         'textarea[name="comment"], textarea#comment, input[name="comment"], input#comment'
@@ -209,7 +209,7 @@ test.describe('VAB and Comments', () => {
     await dayCell.click();
     
     // Wait for modal
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
     const commentInput = page.locator(
       'textarea[name="comment"], textarea#comment, input[name="comment"], input#comment'
@@ -226,7 +226,7 @@ test.describe('VAB and Comments', () => {
       
       // Reopen and remove comment
       await dayCell.click();
-      await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+      await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
       
       const commentInput2 = page.locator(
         'textarea[name="comment"], textarea#comment, input[name="comment"], input#comment'
@@ -240,7 +240,7 @@ test.describe('VAB and Comments', () => {
       
       // Verify removal
       await dayCell.click();
-      await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+      await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
       
       const commentInput3 = page.locator(
         'textarea[name="comment"], textarea#comment, input[name="comment"], input#comment'
@@ -259,11 +259,11 @@ test.describe('VAB and Comments', () => {
     await dayCell.click();
     
     // Wait for modal
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
     // Check VAB
     const vabCheckbox = page.locator(
-      'input[type="checkbox"][name="isVAB"], input[type="checkbox"][name="vab"], input#vab, input#isVAB'
+      'input[type="checkbox"]'
     ).first();
     
     const commentInput = page.locator(
@@ -282,10 +282,10 @@ test.describe('VAB and Comments', () => {
       
       // Verify both were saved
       await dayCell.click();
-      await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+      await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
       
       const vabCheckbox2 = page.locator(
-        'input[type="checkbox"][name="isVAB"], input[type="checkbox"][name="vab"], input#vab, input#isVAB'
+        'input[type="checkbox"]'
       ).first();
       
       const commentInput2 = page.locator(

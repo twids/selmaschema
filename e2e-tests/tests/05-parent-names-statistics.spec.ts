@@ -124,17 +124,15 @@ test.describe('Parent Names and Statistics', () => {
     const dayCell = page.locator('.day-cell').first();
     await dayCell.click();
     
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
     // Select parent and save
-    const parentAOption = page.locator(
-      'input[type="radio"][value="parentA"], input[value="parentA"]'
-    ).first();
+    const parentSelect = page.locator('select#parentSelect');
     
-    if (await parentAOption.count() > 0) {
-      await parentAOption.click();
+    if (await parentSelect.count() > 0) {
+      await parentSelect.selectOption('parentA');
       
-      const saveButton = page.locator('button:has-text("Save"), button[type="submit"]').first();
+      const saveButton = page.locator('button.save-button').first();
       await saveButton.click();
       await page.waitForTimeout(1000);
       
@@ -160,10 +158,10 @@ test.describe('Parent Names and Statistics', () => {
     const dayCell = page.locator('.day-cell').first();
     await dayCell.click();
     
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
     const vabCheckbox = page.locator(
-      'input[type="checkbox"][name="isVAB"], input[type="checkbox"][name="vab"], input#vab, input#isVAB'
+      'input[type="checkbox"]'
     ).first();
     
     if (await vabCheckbox.count() > 0) {
@@ -207,7 +205,7 @@ test.describe('Parent Names and Statistics', () => {
     const dayCell = page.locator('.day-cell').first();
     await dayCell.click();
     
-    await page.waitForSelector('.modal, .day-modal, [role="dialog"]', { timeout: 5000 });
+    await page.waitForSelector('.modal-backdrop', { timeout: 5000 });
     
     const commentInput = page.locator(
       'textarea[name="comment"], textarea#comment, input[name="comment"], input#comment'
