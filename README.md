@@ -11,19 +11,21 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 **Frontend:**
 - React 18 with TypeScript
 - Vite build tool
-- Nginx web server
 - Component-based architecture
+- Served by backend as static files
 
 **Backend:**
 - .NET 8 C# Minimal API
 - Entity Framework Core (Database First)
 - PostgreSQL 16
 - Well-structured layered architecture
+- Serves frontend static files from wwwroot
 
 **Infrastructure:**
 - Docker & Docker Compose
 - PostgreSQL in container
 - Multi-stage Docker builds
+- Unified application container (frontend + backend)
 - Health checks and dependency management
 
 ## Features
@@ -51,7 +53,7 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 
 ### Prerequisites
 - Docker Desktop installed (includes Docker Compose V2)
-- Ports 5432, 8080, and 3000 available
+- Ports 5432 and 3000 available
 
 **Note:** This project requires Docker Compose V2 (comes with Docker Desktop 3.0+ or Docker Engine 20.10+). Use `docker compose` (without hyphen). Docker Compose V1 (`docker-compose` with hyphen) is not supported due to the modern compose file syntax.
 
@@ -75,13 +77,12 @@ docker-compose up --build
 This will:
 - Start PostgreSQL database on port 5432
 - Initialize database schema automatically
-- Start C# API on port 8080
-- Start React frontend on port 3000
+- Build and start unified application (backend + frontend) on port 3000
 
 3. **Access the application**
-- Frontend: http://localhost:3000
-- API: http://localhost:8080
-- Swagger UI: http://localhost:8080/swagger
+- Application: http://localhost:3000
+- API: http://localhost:3000/api
+- Swagger UI: http://localhost:3000/swagger
 
 ### Stopping the Application
 
@@ -230,26 +231,19 @@ npm run lint
 
 #### Docker Build
 
-**Build individual images:**
+**Build unified image:**
 ```bash
-# Backend image
-docker build -t coparenting-api:latest ./backend
-
-# Frontend image
-docker build -t coparenting-frontend:latest ./frontend
+# Build application image (backend + frontend)
+docker build -t coparenting-app:latest .
 ```
 
 **Build with Docker Compose:**
 ```bash
 # Build all services
-docker-compose build
+docker compose build
 
 # Build and start
-docker-compose up --build
-
-# Build specific service
-docker-compose build api
-docker-compose build frontend
+docker compose up --build
 ```
 
 ### Continuous Integration
@@ -263,17 +257,15 @@ Triggers on:
 - Pull requests to `main` or `develop`
 
 Build jobs:
-1. **Backend Build** - Builds .NET 8 API, runs tests, creates artifacts
-2. **Frontend Build** - Builds React app, runs linting, creates artifacts
-3. **Docker Build** - Builds Docker images and validates Docker Compose configuration
-4. **Integration Tests** - Tests services working together
-5. **Docker Publish** - Publishes images to GitHub Container Registry (on merge to main)
+1. **Build** - Builds frontend and backend together, runs tests, creates artifacts
+2. **Docker Build** - Builds unified Docker image and validates Docker Compose configuration
+3. **Integration Tests** - Tests services working together
+4. **Docker Publish** - Publishes image to GitHub Container Registry (on merge to main)
 
 **Docker Images:**
 
-After successful merge to `main`, Docker images are automatically published to GitHub Container Registry:
-- `ghcr.io/twids/selmaschema/coparenting-api:latest`
-- `ghcr.io/twids/selmaschema/coparenting-frontend:latest`
+After successful merge to `main`, Docker image is automatically published to GitHub Container Registry:
+- `ghcr.io/twids/selmaschema/coparenting-app:latest`
 
 Images are tagged with:
 - `latest` - Latest stable version from main branch
@@ -294,8 +286,7 @@ E2E Testing jobs:
    - **Fails PR builds if tests fail**
 
 **Artifacts generated:**
-- `backend-build` - Published .NET application
-- `frontend-build` - Built React application
+- `application-build` - Published .NET application with frontend
 - `e2e-test-results` - Test execution results and screenshots
 - `e2e-test-report` - HTML test report (7 days retention)
 
@@ -351,6 +342,8 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 # - Frontend (with Vite HMR): http://localhost:5173
 # - API (with dotnet watch): http://localhost:8080
 # - Swagger: http://localhost:8080/swagger
+#
+# Note: In production, frontend is served by backend on port 3000
 ```
 
 **Option 2: Native Development**
@@ -405,13 +398,13 @@ selmaschema/
 │   ├── CoParenting.API/          # API endpoints and configuration
 │   │   ├── Endpoints/            # Minimal API endpoints
 │   │   ├── Services/             # Business logic layer
-│   │   └── DTOs/                 # Data transfer objects
+│   │   ├── DTOs/                 # Data transfer objects
+│   │   └── wwwroot/              # Frontend build output (generated)
 │   ├── CoParenting.Core/         # Domain entities
 │   │   └── Entities/            
 │   ├── CoParenting.Infrastructure/ # Data access layer
 │   │   └── Data/                 # EF Core DbContext
 │   ├── init-db.sql               # Database initialization script
-│   ├── Dockerfile                # Backend container image
 │   └── wait-for-it.sh           # Database readiness script
 ├── frontend/
 │   ├── src/
@@ -419,9 +412,8 @@ selmaschema/
 │   │   ├── types.ts              # TypeScript interfaces
 │   │   ├── App.tsx               # Main application
 │   │   └── main.tsx              # Entry point
-│   ├── Dockerfile                # Frontend container image
-│   ├── nginx.conf                # Nginx configuration
 │   └── package.json              # NPM dependencies
+├── Dockerfile                    # Unified application container
 └── docker-compose.yml            # Multi-container orchestration
 ```
 
