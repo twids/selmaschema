@@ -25,6 +25,15 @@ echo.
 echo [INFO] Building backend (.NET 8)...
 echo.
 
+REM First build frontend
+echo [INFO] Building frontend first...
+call :build_frontend_only
+
+REM Copy frontend to backend wwwroot
+echo [INFO] Copying frontend to backend wwwroot...
+if not exist backend\CoParenting.API\wwwroot mkdir backend\CoParenting.API\wwwroot
+xcopy /E /I /Y frontend\dist\* backend\CoParenting.API\wwwroot\
+
 cd backend\CoParenting.API
 
 echo [INFO] Restoring dependencies...
@@ -46,11 +55,7 @@ echo [SUCCESS] Backend built successfully
 echo.
 goto end
 
-:build_frontend
-echo.
-echo [INFO] Building frontend (React + TypeScript)...
-echo.
-
+:build_frontend_only
 cd frontend
 
 if not exist node_modules (
@@ -66,6 +71,14 @@ call npm run build
 if errorlevel 1 goto error
 
 cd ..
+goto :eof
+
+:build_frontend
+echo.
+echo [INFO] Building frontend (React + TypeScript)...
+echo.
+
+call :build_frontend_only
 
 echo.
 echo [SUCCESS] Frontend built successfully
@@ -82,19 +95,15 @@ goto end
 
 :build_docker
 echo.
-echo [INFO] Building Docker images...
+echo [INFO] Building Docker image...
 echo.
 
-echo [INFO] Building backend image...
-docker build -t coparenting-api:latest .\backend
-if errorlevel 1 goto error
-
-echo [INFO] Building frontend image...
-docker build -t coparenting-frontend:latest .\frontend
+echo [INFO] Building unified application image...
+docker build -t coparenting-app:latest .
 if errorlevel 1 goto error
 
 echo.
-echo [SUCCESS] Docker images built successfully
+echo [SUCCESS] Docker image built successfully
 echo.
 goto end
 
@@ -127,6 +136,7 @@ REM Backend
 if exist backend\CoParenting.API\bin rmdir /s /q backend\CoParenting.API\bin
 if exist backend\CoParenting.API\obj rmdir /s /q backend\CoParenting.API\obj
 if exist backend\CoParenting.API\publish rmdir /s /q backend\CoParenting.API\publish
+if exist backend\CoParenting.API\wwwroot rmdir /s /q backend\CoParenting.API\wwwroot
 
 if exist backend\CoParenting.Core\bin rmdir /s /q backend\CoParenting.Core\bin
 if exist backend\CoParenting.Core\obj rmdir /s /q backend\CoParenting.Core\obj
