@@ -1,4 +1,21 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# Build frontend
+FROM node:20-alpine AS frontend-build
+WORKDIR /frontend
+
+# Copy frontend package files
+COPY ../frontend/package*.json ./
+
+# Install frontend dependencies
+RUN npm ci
+
+# Copy frontend source
+COPY ../frontend/ ./
+
+# Build frontend
+RUN npm run build
+
+# Build backend
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS backend-build
 WORKDIR /src
 
 # Copy project files
@@ -17,13 +34,16 @@ WORKDIR /src/CoParenting.API
 RUN dotnet build -c Release -o /app/build
 
 # Publish the application
-FROM build AS publish
+FROM backend-build AS publish
 RUN dotnet publish -c Release -o /app/publish
 
 # Final stage/image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Copy frontend build to wwwroot
+COPY --from=frontend-build /frontend/dist ./wwwroot
 
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "CoParenting.API.dll"]

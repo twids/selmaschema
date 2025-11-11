@@ -8,7 +8,7 @@ import Month from './components/Month';
 import Statistics from './components/Statistics';
 import DayModal from './components/DayModal';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 interface DayAssignmentDto {
   id: number;
