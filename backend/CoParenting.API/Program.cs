@@ -42,12 +42,17 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowFrontend");
 
-// Map endpoints
+// Map API endpoints first
 app.MapDayAssignmentEndpoints();
 app.MapConfigurationEndpoints();
 app.MapStatisticsEndpoints();
 
-app.MapGet("/", () => "Co-Parenting Calendar API is running")
-    .ExcludeFromDescription();
+// Serve static files from wwwroot (frontend build)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+// Fallback to index.html for client-side routing (SPA)
+// This should come after API endpoints to avoid catching API routes
+app.MapFallbackToFile("index.html");
 
 app.Run();

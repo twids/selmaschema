@@ -24,6 +24,15 @@ print_error() {
 build_backend() {
     print_info "Building backend (.NET 8)..."
     
+    # First build frontend
+    print_info "Building frontend first..."
+    build_frontend_only
+    
+    # Copy frontend to backend wwwroot
+    print_info "Copying frontend to backend wwwroot..."
+    mkdir -p backend/CoParenting.API/wwwroot
+    cp -r frontend/dist/* backend/CoParenting.API/wwwroot/
+    
     cd backend/CoParenting.API
     
     print_info "Restoring dependencies..."
@@ -39,9 +48,7 @@ build_backend() {
     print_success "Backend built successfully"
 }
 
-build_frontend() {
-    print_info "Building frontend (React + TypeScript)..."
-    
+build_frontend_only() {
     cd frontend
     
     if [ ! -d "node_modules" ]; then
@@ -55,19 +62,21 @@ build_frontend() {
     npm run build
     
     cd ..
+}
+
+build_frontend() {
+    print_info "Building frontend (React + TypeScript)..."
+    build_frontend_only
     print_success "Frontend built successfully"
 }
 
 build_docker() {
-    print_info "Building Docker images..."
+    print_info "Building Docker image..."
     
-    print_info "Building backend image..."
-    docker build -t coparenting-api:latest ./backend
+    print_info "Building unified application image..."
+    docker build -t coparenting-app:latest .
     
-    print_info "Building frontend image..."
-    docker build -t coparenting-frontend:latest ./frontend
-    
-    print_success "Docker images built successfully"
+    print_success "Docker image built successfully"
 }
 
 test_backend() {
@@ -98,6 +107,9 @@ clean() {
     fi
     if [ -d "backend/CoParenting.API/publish" ]; then
         rm -rf backend/CoParenting.API/publish
+    fi
+    if [ -d "backend/CoParenting.API/wwwroot" ]; then
+        rm -rf backend/CoParenting.API/wwwroot
     fi
     
     # Frontend

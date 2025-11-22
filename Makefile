@@ -25,6 +25,12 @@ build: build-backend build-frontend
 
 build-backend:
 	@echo "Building backend..."
+	@echo "Building frontend first..."
+	cd frontend && npm ci
+	cd frontend && npm run build
+	@echo "Copying frontend to backend wwwroot..."
+	mkdir -p backend/CoParenting.API/wwwroot
+	cp -r frontend/dist/* backend/CoParenting.API/wwwroot/
 	cd backend/CoParenting.API && dotnet restore
 	cd backend/CoParenting.API && dotnet build --configuration Release
 	@echo "✓ Backend built successfully"
@@ -51,34 +57,35 @@ test-frontend:
 
 # Docker targets
 docker-build:
-	@echo "Building Docker images..."
-	docker-compose build
-	@echo "✓ Docker images built successfully"
+	@echo "Building Docker image..."
+	docker build -t coparenting-app:latest .
+	@echo "✓ Docker image built successfully"
 
 start:
 	@echo "Starting all services..."
-	docker-compose up -d
+	docker compose up -d
 	@echo "✓ Services started"
-	@echo "  Frontend: http://localhost:3000"
-	@echo "  API: http://localhost:8080"
-	@echo "  Swagger: http://localhost:8080/swagger"
+	@echo "  Application: http://localhost:3000"
+	@echo "  API: http://localhost:3000/api"
+	@echo "  Swagger: http://localhost:3000/swagger"
 
 stop:
 	@echo "Stopping all services..."
-	docker-compose down
+	docker compose down
 	@echo "✓ Services stopped"
 
 restart: stop start
 	@echo "✓ Services restarted"
 
 logs:
-	docker-compose logs -f
+	docker compose logs -f
 
 # Clean targets
 clean:
 	@echo "Cleaning build artifacts..."
 	cd backend/CoParenting.API && dotnet clean
 	rm -rf backend/CoParenting.API/bin backend/CoParenting.API/obj
+	rm -rf backend/CoParenting.API/wwwroot
 	rm -rf backend/CoParenting.Core/bin backend/CoParenting.Core/obj
 	rm -rf backend/CoParenting.Infrastructure/bin backend/CoParenting.Infrastructure/obj
 	rm -rf frontend/dist frontend/node_modules
@@ -86,7 +93,7 @@ clean:
 
 clean-all: clean
 	@echo "Cleaning Docker resources..."
-	docker-compose down -v --remove-orphans
+	docker compose down -v --remove-orphans
 	@echo "✓ Everything cleaned"
 
 # Development helpers
