@@ -62,7 +62,7 @@ jobs:
     
     - name: Start API and frontend services
       run: |
-        docker compose up -d api frontend
+        docker compose up -d app
         echo "Waiting for services to start..."
         sleep 10
     
@@ -70,24 +70,24 @@ jobs:
       run: |
         docker compose ps
         
-        # Wait for API to be ready
-        echo "Checking API health..."
+        # Wait for app to be ready (both frontend and API)
+        echo "Checking app health..."
         for i in {1..30}; do
-          if curl -f http://localhost:8080/api/config/parent-names >/dev/null 2>&1; then
+          if curl -f http://localhost:3000/api/config/parent-names >/dev/null 2>&1; then
             echo "API is ready!"
             break
           fi
           if [ $i -eq 30 ]; then
             echo "API failed to become ready"
-            docker compose logs api
+            docker compose logs app
             exit 1
           fi
           echo "Waiting for API... ($i/30)"
           sleep 2
         done
         
-        # Wait for frontend to be ready
-        echo "Checking frontend health..."
+        # Check if frontend is accessible
+        echo "Checking frontend..."
         for i in {1..30}; do
           if curl -f http://localhost:3000 >/dev/null 2>&1; then
             echo "Frontend is ready!"
@@ -95,7 +95,7 @@ jobs:
           fi
           if [ $i -eq 30 ]; then
             echo "Frontend failed to become ready"
-            docker compose logs frontend
+            docker compose logs app
             exit 1
           fi
           echo "Waiting for frontend... ($i/30)"
@@ -111,7 +111,7 @@ jobs:
         npm test
       env:
         BASE_URL: http://localhost:3000
-        API_URL: http://localhost:8080
+        API_URL: http://localhost:3000
         CI: true
     
     - name: Upload test results
@@ -135,10 +135,8 @@ jobs:
       run: |
         echo "=== Database Logs ==="
         docker compose logs db
-        echo "=== API Logs ==="
-        docker compose logs api
-        echo "=== Frontend Logs ==="
-        docker compose logs frontend
+        echo "=== Application Logs ==="
+        docker compose logs app
     
     - name: Stop services
       if: always()

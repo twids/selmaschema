@@ -430,3 +430,5 @@ frontend/dist/
 backend/**/bin/
 backend/**/obj/
 
+# Generated wwwroot from frontend build
+backend/CoParenting.API/wwwroot/
