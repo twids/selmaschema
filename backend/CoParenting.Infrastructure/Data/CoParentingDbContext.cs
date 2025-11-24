@@ -15,6 +15,9 @@ public class CoParentingDbContext : DbContext
 
     public DbSet<DayAssignment> DayAssignments { get; set; }
     public DbSet<Configuration> Configurations { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<Child> Children { get; set; }
+    public DbSet<Invitation> Invitations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -59,5 +62,58 @@ public class CoParentingDbContext : DbContext
                 CreatedAt = DateTime.UtcNow 
             }
         );
+
+        // User configuration
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.GoogleId).IsUnique();
+            entity.HasIndex(e => e.Email);
+            entity.Property(e => e.GoogleId).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.Email).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.Name).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        });
+
+        // Child configuration
+        modelBuilder.Entity<Child>(entity =>
+        {
+            entity.ToTable("Children");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            
+            entity.HasOne(e => e.PrimaryParent)
+                .WithMany(u => u.Children)
+                .HasForeignKey(e => e.PrimaryParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasOne(e => e.SecondaryParent)
+                .WithMany()
+                .HasForeignKey(e => e.SecondaryParentId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Invitation configuration
+        modelBuilder.Entity<Invitation>(entity =>
+        {
+            entity.ToTable("Invitations");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ChildId, e.InviteeEmail });
+            entity.Property(e => e.InviteeEmail).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.Status).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            
+            entity.HasOne(e => e.Inviter)
+                .WithMany(u => u.SentInvitations)
+                .HasForeignKey(e => e.InviterId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            entity.HasOne(e => e.Child)
+                .WithMany()
+                .HasForeignKey(e => e.ChildId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

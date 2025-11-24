@@ -2,6 +2,8 @@ using CoParenting.API.Endpoints;
 using CoParenting.API.Services;
 using CoParenting.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +22,30 @@ builder.Services.AddDbContext<CoParentingDbContext>(options =>
 builder.Services.AddScoped<DayAssignmentService>();
 builder.Services.AddScoped<ConfigurationService>();
 
+// Add Authentication
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+})
+.AddCookie(options =>
+{
+    options.LoginPath = "/api/auth/login";
+    options.LogoutPath = "/api/auth/logout";
+    options.Cookie.Name = "CoParenting.Auth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+})
+.AddGoogle(options =>
+{
+    options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? "";
+    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? "";
+    options.CallbackPath = "/api/auth/google-callback";
+});
+
+builder.Services.AddAuthorization();
+
 // Add CORS
 builder.Services.AddCors(options =>
 {
@@ -27,7 +53,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -42,7 +69,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowFrontend");
 
+// Add authentication middleware
+app.UseAuthentication();
+app.UseAuthorization();
+
 // Map API endpoints first
+app.MapAuthenticationEndpoints();
+app.MapChildEndpoints();
+app.MapInvitationEndpoints();
 app.MapDayAssignmentEndpoints();
 app.MapConfigurationEndpoints();
 app.MapStatisticsEndpoints();
