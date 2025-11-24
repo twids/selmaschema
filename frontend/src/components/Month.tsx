@@ -15,6 +15,7 @@ interface MonthProps {
 }
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MILLISECONDS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -32,8 +33,6 @@ function getDateKey(year: number, month: number, day: number): string {
 // Week 1 is the week with the first Thursday of the year
 // Weeks start on Monday
 function getWeekNumber(date: Date): number {
-  const MILLISECONDS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
-  
   // Copy date to avoid mutation
   const target = new Date(date.valueOf());
   
@@ -49,6 +48,16 @@ function getWeekNumber(date: Date): number {
   const weekNo = Math.ceil((((target.getTime() - yearStart.getTime()) / MILLISECONDS_PER_WEEK) + 1));
   
   return weekNo;
+}
+
+// Calculate the day number for Monday of a given week in the calendar display
+// firstDay: 0-6 (Sunday=0, Monday=1, ..., Saturday=6)
+// weekIndex: 0-based index of the week row in the calendar
+function getMondayDayNumber(firstDay: number, weekIndex: number): number {
+  const daysFromStart = weekIndex * 7;
+  // Convert firstDay to days before Monday (0=6, 1=0, 2=1, ..., 6=5)
+  const daysBeforeMonday = firstDay === 0 ? 6 : firstDay - 1;
+  return 1 - daysBeforeMonday + daysFromStart;
 }
 
 export default function Month({
@@ -84,13 +93,11 @@ export default function Month({
   let currentDay = 1;
   let weekIndex = 0;
   
-  // Loop continues while there are days to render or we haven't started yet
-  // The weekIndex === 0 condition ensures we always render at least one week row
-  while (currentDay <= daysInMonth || weekIndex === 0) {
+  // Use do-while to ensure at least one week row is always rendered
+  do {
     // Calculate week number based on the Monday of this week row
-    // For calendar display, find the Monday of each week row (even if it's in the previous month)
-    const daysFromStart = weekIndex * 7;
-    const mondayDayNumber = 1 - (firstDay === 0 ? 6 : firstDay - 1) + daysFromStart;
+    // Find the Monday date for this week (may be in the previous month)
+    const mondayDayNumber = getMondayDayNumber(firstDay, weekIndex);
     const mondayDate = new Date(currentYear, monthIndex, mondayDayNumber);
     
     const weekNum = getWeekNumber(mondayDate);
@@ -131,12 +138,7 @@ export default function Month({
     }
     
     weekIndex++;
-    
-    // Stop if we've rendered all days and filled the last week
-    if (currentDay > daysInMonth && weekIndex > 0) {
-      break;
-    }
-  }
+  } while (currentDay <= daysInMonth);
 
   return (
     <div className="month-section">
