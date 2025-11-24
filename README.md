@@ -248,19 +248,24 @@ docker compose up --build
 
 ### Continuous Integration
 
-The project includes GitHub Actions workflows for automated building and testing:
+The project includes a GitHub Actions workflow for automated building and testing.
+
+For detailed workflow policies, artifact retention rules, and quota management guidelines, see **[WORKFLOW_POLICIES.md](./WORKFLOW_POLICIES.md)**.
 
 **Workflow: `.github/workflows/ci-cd.yml`**
 
 Triggers on:
-- Push to `main`, `develop`, or `copilot/**` branches
-- Pull requests to `main` or `develop`
+- Push to `main`, `develop`, or `copilot/**` branches (with path filters)
+- Pull requests to `main` or `develop` (with path filters)
+
+**Path filters** ensure workflows only run when relevant files change (backend, frontend, Docker, e2e-tests).
 
 Build jobs:
 1. **Build** - Builds frontend and backend together, runs tests, creates artifacts
 2. **Docker Build** - Builds unified Docker image and validates Docker Compose configuration
 3. **Integration Tests** - Tests services working together
-4. **Docker Publish** - Publishes image to GitHub Container Registry (on merge to main)
+4. **E2E Tests** - Runs comprehensive end-to-end tests with Playwright
+5. **Docker Publish** - Publishes image to GitHub Container Registry (on merge to main)
 
 **Docker Images:**
 
@@ -271,24 +276,10 @@ Images are tagged with:
 - `latest` - Latest stable version from main branch
 - `main-<commit-sha>` - Specific commit from main branch
 
-**Workflow: `.github/workflows/e2e-tests.yml`**
-
-Triggers on:
-- Push to `main`, `develop`, or `copilot/**` branches
-- Pull requests to `main` or `develop`
-
-E2E Testing jobs:
-1. **E2E Tests** - Runs comprehensive end-to-end tests with Playwright
-   - Starts all services with Docker Compose
-   - Waits for services to be healthy
-   - Runs full test suite covering all functionality
-   - Uploads test results and reports as artifacts
-   - **Fails PR builds if tests fail**
-
 **Artifacts generated:**
-- `application-build` - Published .NET application with frontend
-- `e2e-test-results` - Test execution results and screenshots
-- `e2e-test-report` - HTML test report (7 days retention)
+- `application-build` - Published .NET application with frontend (3 days retention)
+- `e2e-test-results` - Test execution results (3 days retention, only on failure)
+- `e2e-test-report` - HTML test report (3 days retention, only on failure)
 
 **Note on Docker Compose:**
 - CI/CD uses Docker Compose V2 (`docker compose` command)
