@@ -46,8 +46,31 @@
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: auto repeat(7, 1fr);
   gap: 10px;
+}
+
+.week-header {
+  text-align: center;
+  font-weight: 700;
+  padding: 10px;
+  background: #e9ecef;
+  border-radius: 6px;
+  color: #495057;
+  font-size: 14px;
+}
+
+.week-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  padding: 10px;
+  background: #e9ecef;
+  border-radius: 6px;
+  color: #667eea;
+  font-size: 16px;
+  min-width: 50px;
 }
 
 .day-header {
@@ -61,7 +84,13 @@
 
 @media (max-width: 768px) {
   .calendar-grid {
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: auto repeat(7, 1fr);
     gap: 5px;
+  }
+  
+  .week-number {
+    font-size: 14px;
+    min-width: 40px;
+    padding: 5px;
   }
 }
