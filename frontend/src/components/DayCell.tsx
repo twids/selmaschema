@@ -1,4 +1,4 @@
-import { Box, Typography, Tooltip, Chip } from '@mui/material';
+import { Box, Typography, Tooltip, Chip, useTheme } from '@mui/material';
 import { DayData, ParentNames } from '../types';
 
 interface DayCellProps {
@@ -15,6 +15,8 @@ export default function DayCell({
   parentNames,
   onClick,
 }: DayCellProps) {
+  const theme = useTheme();
+  
   const getParentName = () => {
     if (!dayData || !dayData.parent) return 'Unassigned';
     return dayData.parent === 'parentA' ? parentNames.parentA : parentNames.parentB;
@@ -35,7 +37,7 @@ export default function DayCell({
       onClick={onClick}
       sx={{
         bgcolor: getBgColor(),
-        border: dayData?.isVAB ? '3px solid #ffc107' : '1px solid #ddd',
+        border: dayData?.isVAB ? `3px solid ${theme.palette.warning.main}` : '1px solid #ddd',
         borderRadius: 1,
         p: 1,
         minHeight: '100px',

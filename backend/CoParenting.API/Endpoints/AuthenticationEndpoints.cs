@@ -114,8 +114,9 @@ public static class AuthenticationEndpoints
         // Demo login
         app.MapPost("/api/auth/demo", async (HttpContext context, CoParentingDbContext db) =>
         {
-            var demoId = "demo-" + Guid.NewGuid().ToString();
-            var demoEmail = $"{demoId}@demo.local";
+            // Use a secure random GUID for demo user identification
+            var demoId = "demo-" + Guid.NewGuid().ToString("N");
+            var demoEmail = $"demo-{Guid.NewGuid().ToString("N").Substring(0, 8)}@demo.local";
             
             // Create demo user
             var user = new User

@@ -100,6 +100,7 @@ public class CoParentingDbContext : DbContext
         {
             entity.ToTable("Invitations");
             entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.InviteeEmail);
             entity.HasIndex(e => new { e.ChildId, e.InviteeEmail });
             entity.Property(e => e.InviteeEmail).HasMaxLength(255).IsRequired();
             entity.Property(e => e.Status).HasMaxLength(50).IsRequired();

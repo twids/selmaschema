@@ -26,7 +26,7 @@ public static class InvitationEndpoints
             var invitations = await db.Invitations
                 .Include(i => i.Inviter)
                 .Include(i => i.Child)
-                .Where(i => i.InviteeEmail == email && i.Status == "Pending")
+                .Where(i => i.InviteeEmail.ToLower() == email.ToLower() && i.Status == "Pending")
                 .Select(i => new
                 {
                     i.Id,
@@ -84,7 +84,7 @@ public static class InvitationEndpoints
             // Check if invitation already exists
             var existingInvitation = await db.Invitations
                 .FirstOrDefaultAsync(i => i.ChildId == request.ChildId 
-                    && i.InviteeEmail == request.InviteeEmail 
+                    && i.InviteeEmail.ToLower() == request.InviteeEmail.ToLower()
                     && i.Status == "Pending");
 
             if (existingInvitation != null)
@@ -131,7 +131,7 @@ public static class InvitationEndpoints
 
             var invitation = await db.Invitations
                 .Include(i => i.Child)
-                .FirstOrDefaultAsync(i => i.Id == id && i.InviteeEmail == email && i.Status == "Pending");
+                .FirstOrDefaultAsync(i => i.Id == id && i.InviteeEmail.ToLower() == email.ToLower() && i.Status == "Pending");
 
             if (invitation == null)
             {
@@ -178,7 +178,7 @@ public static class InvitationEndpoints
             }
 
             var invitation = await db.Invitations
-                .FirstOrDefaultAsync(i => i.Id == id && i.InviteeEmail == email && i.Status == "Pending");
+                .FirstOrDefaultAsync(i => i.Id == id && i.InviteeEmail.ToLower() == email.ToLower() && i.Status == "Pending");
 
             if (invitation == null)
             {
