@@ -1,6 +1,6 @@
+import { Box, Paper, Typography, Button, Stack } from '@mui/material';
 import { CalendarData, ParentNames } from '../types';
 import DayCell from './DayCell';
-import './Month.css';
 
 interface MonthProps {
   monthName: string;
@@ -46,7 +46,7 @@ export default function Month({
 
   // Add empty cells for days before month starts
   for (let i = 0; i < firstDay; i++) {
-    days.push(<div key={`empty-${i}`} className="day-cell empty-day"></div>);
+    days.push(<Box key={`empty-${i}`} />);
   }
 
   // Add day cells
@@ -67,30 +67,67 @@ export default function Month({
   }
 
   return (
-    <div className="month-section">
-      <div className="month-header">
-        <h2>
+    <Paper elevation={2} sx={{ p: 2 }}>
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="h5" gutterBottom>
           {monthName} {currentYear}
-        </h2>
-        <div className="month-actions">
-          <button onClick={() => onFillMonth('parentA', monthIndex, currentYear)}>
+        </Typography>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => onFillMonth('parentA', monthIndex, currentYear)}
+          >
             Fill {parentNames.parentA}
-          </button>
-          <button onClick={() => onFillMonth('parentB', monthIndex, currentYear)}>
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => onFillMonth('parentB', monthIndex, currentYear)}
+          >
             Fill {parentNames.parentB}
-          </button>
-          <button onClick={() => onAlternateMonth(monthIndex, currentYear)}>Alternate Days</button>
-          <button onClick={() => onInitializeMonth()} className="init-button">Initialize with Defaults</button>
-        </div>
-      </div>
-      <div className="calendar-grid">
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => onAlternateMonth(monthIndex, currentYear)}
+          >
+            Alternate Days
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={() => onInitializeMonth()}
+          >
+            Initialize with Defaults
+          </Button>
+        </Stack>
+      </Box>
+      
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          gap: 1,
+        }}
+      >
         {dayNames.map((dayName) => (
-          <div key={dayName} className="day-header">
+          <Box
+            key={dayName}
+            sx={{
+              fontWeight: 'bold',
+              textAlign: 'center',
+              py: 1,
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              borderRadius: 1,
+            }}
+          >
             {dayName}
-          </div>
+          </Box>
         ))}
         {days}
-      </div>
-    </div>
+      </Box>
+    </Paper>
   );
 }

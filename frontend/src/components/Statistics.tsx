@@ -1,5 +1,5 @@
+import { Paper, Typography, Grid, Card, CardContent } from '@mui/material';
 import { CalendarData, ParentNames } from '../types';
-import './Statistics.css';
 
 interface StatisticsProps {
   currentYear: number;
@@ -44,28 +44,35 @@ export default function Statistics({
 
   const stats = calculateStats();
 
+  const statItems = [
+    { label: `${parentNames.parentA} Days`, value: stats.parentADays, color: '#bbdefb' },
+    { label: `${parentNames.parentB} Days`, value: stats.parentBDays, color: '#f8bbd0' },
+    { label: 'VAB Days', value: stats.vabDays, color: '#fff9c4' },
+    { label: 'Days with Comments', value: stats.commentedDays, color: '#c5e1a5' },
+    { label: 'Unassigned Days', value: stats.unassignedDays, color: '#f5f5f5' },
+  ];
+
   return (
-    <div className="statistics">
-      <div className="stat-item">
-        <div className="stat-value">{stats.parentADays}</div>
-        <div className="stat-label">{parentNames.parentA} Days</div>
-      </div>
-      <div className="stat-item">
-        <div className="stat-value">{stats.parentBDays}</div>
-        <div className="stat-label">{parentNames.parentB} Days</div>
-      </div>
-      <div className="stat-item">
-        <div className="stat-value">{stats.vabDays}</div>
-        <div className="stat-label">VAB Days</div>
-      </div>
-      <div className="stat-item">
-        <div className="stat-value">{stats.commentedDays}</div>
-        <div className="stat-label">Days with Comments</div>
-      </div>
-      <div className="stat-item">
-        <div className="stat-value">{stats.unassignedDays}</div>
-        <div className="stat-label">Unassigned Days</div>
-      </div>
-    </div>
+    <Paper elevation={2} sx={{ p: 2, mt: 3 }}>
+      <Typography variant="h6" gutterBottom>
+        Year Statistics
+      </Typography>
+      <Grid container spacing={2}>
+        {statItems.map((item) => (
+          <Grid item xs={12} sm={6} md={2.4} key={item.label}>
+            <Card sx={{ bgcolor: item.color }}>
+              <CardContent sx={{ textAlign: 'center' }}>
+                <Typography variant="h4" component="div">
+                  {item.value}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {item.label}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Paper>
   );
 }

@@ -1,6 +1,22 @@
 import { useRef } from 'react';
+import {
+  Box,
+  Paper,
+  Stack,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  IconButton,
+  Typography,
+} from '@mui/material';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
 import { ParentNames } from '../types';
-import './Controls.css';
 
 interface ControlsProps {
   currentYear: number;
@@ -44,7 +60,6 @@ export default function Controls({
     const file = e.target.files?.[0];
     if (file) {
       onImport(file);
-      // Reset file input
       e.target.value = '';
     }
   };
@@ -61,65 +76,105 @@ export default function Controls({
   ];
 
   return (
-    <div className="controls">
-      <div className="month-navigation">
-        <button onClick={() => onNavigateMonth(-1)}>← Previous</button>
-        <select
-          value={currentMonth}
-          onChange={(e) => onMonthChange(parseInt(e.target.value))}
-        >
-          {months.map((month, index) => (
-            <option key={index} value={index}>
-              {month}
-            </option>
-          ))}
-        </select>
-        <select
-          value={currentYear}
-          onChange={(e) => onYearChange(parseInt(e.target.value))}
-        >
-          {years.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
-        <button onClick={() => onNavigateMonth(1)}>Next →</button>
-      </div>
+    <Paper elevation={2} sx={{ p: 2 }}>
+      <Stack spacing={3}>
+        {/* Month Navigation */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <IconButton onClick={() => onNavigateMonth(-1)} color="primary">
+            <NavigateBeforeIcon />
+          </IconButton>
+          
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Month</InputLabel>
+            <Select
+              value={currentMonth}
+              label="Month"
+              onChange={(e) => onMonthChange(Number(e.target.value))}
+            >
+              {months.map((month, index) => (
+                <MenuItem key={index} value={index}>
+                  {month}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-      <div className="parent-names">
-        <label htmlFor="parentAName">Parent A:</label>
-        <input
-          ref={parentARef}
-          type="text"
-          id="parentAName"
-          placeholder="Parent A name"
-          defaultValue={parentNames.parentA}
-        />
+          <FormControl size="small" sx={{ minWidth: 100 }}>
+            <InputLabel>Year</InputLabel>
+            <Select
+              value={currentYear}
+              label="Year"
+              onChange={(e) => onYearChange(Number(e.target.value))}
+            >
+              {years.map((year) => (
+                <MenuItem key={year} value={year}>
+                  {year}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-        <label htmlFor="parentBName">Parent B:</label>
-        <input
-          ref={parentBRef}
-          type="text"
-          id="parentBName"
-          placeholder="Parent B name"
-          defaultValue={parentNames.parentB}
-        />
+          <IconButton onClick={() => onNavigateMonth(1)} color="primary">
+            <NavigateNextIcon />
+          </IconButton>
+        </Box>
 
-        <button onClick={handleUpdateNames}>Update Names</button>
-      </div>
+        {/* Parent Names */}
+        <Box>
+          <Typography variant="subtitle2" gutterBottom>
+            Parent Names
+          </Typography>
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <TextField
+              inputRef={parentARef}
+              size="small"
+              label="Parent A"
+              defaultValue={parentNames.parentA}
+              sx={{ minWidth: 150 }}
+            />
+            <TextField
+              inputRef={parentBRef}
+              size="small"
+              label="Parent B"
+              defaultValue={parentNames.parentB}
+              sx={{ minWidth: 150 }}
+            />
+            <Button variant="contained" onClick={handleUpdateNames}>
+              Update Names
+            </Button>
+          </Stack>
+        </Box>
 
-      <div className="data-actions">
-        <button onClick={onExport}>Export Data</button>
-        <button onClick={handleImportClick}>Import Data</button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-      </div>
-    </div>
+        {/* Data Actions */}
+        <Box>
+          <Typography variant="subtitle2" gutterBottom>
+            Data Management
+          </Typography>
+          <Stack direction="row" spacing={2}>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={onExport}
+            >
+              Export Data
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<UploadIcon />}
+              onClick={handleImportClick}
+            >
+              Import Data
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+          </Stack>
+        </Box>
+      </Stack>
+    </Paper>
   );
 }

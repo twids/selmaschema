@@ -31,10 +31,12 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=selmadb;Database=CoParentingCalendar;Username=postgres;Password=YourStrong@Passw0rd
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID:-}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET:-}
     ports:
       - "3000:8080"
     depends_on:
-      db:
+      selmadb:
         condition: service_healthy
     networks:
       - coparenting-network
