@@ -32,12 +32,23 @@ function getDateKey(year: number, month: number, day: number): string {
 // Week 1 is the week with the first Thursday of the year
 // Weeks start on Monday
 function getWeekNumber(date: Date): number {
+  const MILLISECONDS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+  
+  // Copy date to avoid mutation
   const target = new Date(date.valueOf());
-  const dayNum = (date.getDay() + 6) % 7; // Convert to Monday = 0
-  target.setDate(target.getDate() - dayNum + 3); // Thursday of this week
-  const firstThursday = new Date(target.getFullYear(), 0, 4);
-  const diff = target.getTime() - firstThursday.getTime();
-  return 1 + Math.round(diff / 604800000); // 604800000 = 7 * 24 * 60 * 60 * 1000
+  
+  // Set to nearest Thursday (current date + 4 - current day number)
+  // Make Sunday's day number 7
+  const dayNum = target.getDay() || 7;
+  target.setDate(target.getDate() + 4 - dayNum);
+  
+  // Get first day of year
+  const yearStart = new Date(target.getFullYear(), 0, 1);
+  
+  // Calculate full weeks to nearest Thursday
+  const weekNo = Math.ceil((((target.getTime() - yearStart.getTime()) / MILLISECONDS_PER_WEEK) + 1));
+  
+  return weekNo;
 }
 
 export default function Month({
@@ -73,25 +84,14 @@ export default function Month({
   let currentDay = 1;
   let weekIndex = 0;
   
+  // Loop continues while there are days to render or we haven't started yet
+  // The weekIndex === 0 condition ensures we always render at least one week row
   while (currentDay <= daysInMonth || weekIndex === 0) {
-    // Calculate week number based on the Monday of this week
-    // Find what date is the Monday of this week row
-    let mondayDate: Date;
-    if (weekIndex === 0 && firstDay !== 1) {
-      // First week - find the Monday
-      if (firstDay === 0) {
-        // Sunday start, Monday is day 2
-        mondayDate = new Date(currentYear, monthIndex, 2);
-      } else {
-        // Monday is before the 1st, or after
-        mondayDate = new Date(currentYear, monthIndex, 1 - firstDay + 1);
-      }
-    } else {
-      // For other weeks, calculate based on current position
-      const daysFromStart = weekIndex * 7;
-      const targetDay = 1 - firstDay + 1 + daysFromStart;
-      mondayDate = new Date(currentYear, monthIndex, targetDay);
-    }
+    // Calculate week number based on the Monday of this week row
+    // For calendar display, find the Monday of each week row (even if it's in the previous month)
+    const daysFromStart = weekIndex * 7;
+    const mondayDayNumber = 1 - (firstDay === 0 ? 6 : firstDay - 1) + daysFromStart;
+    const mondayDate = new Date(currentYear, monthIndex, mondayDayNumber);
     
     const weekNum = getWeekNumber(mondayDate);
     
