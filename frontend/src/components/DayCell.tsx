@@ -1,5 +1,5 @@
+import { Box, Typography, Tooltip, Chip } from '@mui/material';
 import { DayData, ParentNames } from '../types';
-import './DayCell.css';
 
 interface DayCellProps {
   day: number;
@@ -20,19 +20,9 @@ export default function DayCell({
     return dayData.parent === 'parentA' ? parentNames.parentA : parentNames.parentB;
   };
 
-  const getClassName = () => {
-    const classes = ['day-cell'];
-    if (!dayData || !dayData.parent) {
-      classes.push('unassigned');
-    } else if (dayData.parent === 'parentA') {
-      classes.push('parent-a');
-    } else if (dayData.parent === 'parentB') {
-      classes.push('parent-b');
-    }
-    if (dayData?.isVAB) {
-      classes.push('has-vab');
-    }
-    return classes.join(' ');
+  const getBgColor = () => {
+    if (!dayData || !dayData.parent) return '#f5f5f5';
+    return dayData.parent === 'parentA' ? '#bbdefb' : '#f8bbd0';
   };
 
   const truncateComment = (comment: string) => {
@@ -40,14 +30,46 @@ export default function DayCell({
     return comment.length > 30 ? comment.substring(0, 30) + '...' : comment;
   };
 
-  return (
-    <div className={getClassName()} onClick={onClick}>
-      <div className="day-number">{day}</div>
-      <div className="day-parent">{getParentName()}</div>
+  const cellContent = (
+    <Box
+      onClick={onClick}
+      sx={{
+        bgcolor: getBgColor(),
+        border: dayData?.isVAB ? '3px solid #ffc107' : '1px solid #ddd',
+        borderRadius: 1,
+        p: 1,
+        minHeight: '100px',
+        cursor: 'pointer',
+        '&:hover': {
+          opacity: 0.8,
+          boxShadow: 2,
+        },
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <Typography variant="h6" fontWeight="bold">
+        {day}
+      </Typography>
+      <Typography variant="caption" sx={{ mt: 0.5 }}>
+        {getParentName()}
+      </Typography>
       {dayData?.comment && (
-        <div className="day-comment">{truncateComment(dayData.comment)}</div>
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+          {truncateComment(dayData.comment)}
+        </Typography>
       )}
-      {dayData?.isVAB && <div className="vab-badge">VAB</div>}
-    </div>
+      {dayData?.isVAB && (
+        <Chip label="VAB" size="small" color="warning" sx={{ mt: 'auto', alignSelf: 'flex-start' }} />
+      )}
+    </Box>
+  );
+
+  return dayData?.comment ? (
+    <Tooltip title={dayData.comment} arrow>
+      {cellContent}
+    </Tooltip>
+  ) : (
+    cellContent
   );
 }

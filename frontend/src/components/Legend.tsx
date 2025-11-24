@@ -1,5 +1,5 @@
+import { Paper, Stack, Typography, Chip } from '@mui/material';
 import { ParentNames } from '../types';
-import './Legend.css';
 
 interface LegendProps {
   parentNames: ParentNames;
@@ -7,23 +7,30 @@ interface LegendProps {
 
 export default function Legend({ parentNames }: LegendProps) {
   return (
-    <div className="legend">
-      <div className="legend-item">
-        <div className="legend-color parent-a"></div>
-        <span>{parentNames.parentA}</span>
-      </div>
-      <div className="legend-item">
-        <div className="legend-color parent-b"></div>
-        <span>{parentNames.parentB}</span>
-      </div>
-      <div className="legend-item">
-        <div className="legend-color unassigned"></div>
-        <span>Unassigned</span>
-      </div>
-      <div className="legend-item">
-        <div className="legend-color vab-day"></div>
-        <span>VAB (Child Care Leave)</span>
-      </div>
-    </div>
+    <Paper elevation={1} sx={{ p: 2, mt: 2 }}>
+      <Typography variant="subtitle2" gutterBottom>
+        Legend
+      </Typography>
+      <Stack direction="row" spacing={2} flexWrap="wrap">
+        <Chip
+          label={parentNames.parentA}
+          sx={{ bgcolor: '#bbdefb', color: '#000' }}
+        />
+        <Chip
+          label={parentNames.parentB}
+          sx={{ bgcolor: '#f8bbd0', color: '#000' }}
+        />
+        <Chip
+          label="Unassigned"
+          sx={{ bgcolor: '#f5f5f5', color: '#000' }}
+        />
+        <Chip
+          label="VAB (Child Care Leave)"
+          variant="outlined"
+          sx={{ borderColor: '#ffc107', borderWidth: 2 }}
+        />
+      </Stack>
+    </Paper>
   );
 }
+

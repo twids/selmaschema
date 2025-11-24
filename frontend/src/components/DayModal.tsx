@@ -1,6 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  FormControlLabel,
+  Checkbox,
+  Stack,
+} from '@mui/material';
 import { DayData, ParentNames } from '../types';
-import './DayModal.css';
 
 interface DayModalProps {
   dateKey: string;
@@ -34,14 +48,6 @@ export default function DayModal({
   const [isVAB, setIsVAB] = useState(dayData?.isVAB || false);
   const [comment, setComment] = useState(dayData?.comment || '');
 
-  useEffect(() => {
-    // Prevent background scrolling when modal is open
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
-
   const handleSave = () => {
     onSave({
       parent,
@@ -50,62 +56,51 @@ export default function DayModal({
     });
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   return (
-    <div className="modal-backdrop" onClick={handleBackdropClick}>
-      <div className="modal-content">
-        <h3>{formatDate(dateKey)}</h3>
-        <div className="modal-body">
-          <div className="form-group">
-            <label htmlFor="parentSelect">Assigned to:</label>
-            <select
-              id="parentSelect"
+    <Dialog open={true} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>{formatDate(dateKey)}</DialogTitle>
+      <DialogContent>
+        <Stack spacing={3} sx={{ mt: 1 }}>
+          <FormControl fullWidth>
+            <InputLabel>Assigned to</InputLabel>
+            <Select
               value={parent}
+              label="Assigned to"
               onChange={(e) => setParent(e.target.value as '' | 'parentA' | 'parentB')}
             >
-              <option value="">Unassigned</option>
-              <option value="parentA">{parentNames.parentA}</option>
-              <option value="parentB">{parentNames.parentB}</option>
-            </select>
-          </div>
+              <MenuItem value="">Unassigned</MenuItem>
+              <MenuItem value="parentA">{parentNames.parentA}</MenuItem>
+              <MenuItem value="parentB">{parentNames.parentB}</MenuItem>
+            </Select>
+          </FormControl>
 
-          <div className="form-group checkbox-group">
-            <label>
-              <input
-                type="checkbox"
+          <FormControlLabel
+            control={
+              <Checkbox
                 checked={isVAB}
                 onChange={(e) => setIsVAB(e.target.checked)}
               />
-              Mark as VAB (Child Care Leave)
-            </label>
-          </div>
+            }
+            label="Mark as VAB (Child Care Leave)"
+          />
 
-          <div className="form-group">
-            <label htmlFor="commentInput">Comment:</label>
-            <textarea
-              id="commentInput"
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Add notes or comments for this day..."
-              rows={4}
-            />
-          </div>
-
-          <div className="modal-actions">
-            <button className="save-button" onClick={handleSave}>
-              Save
-            </button>
-            <button className="cancel-button" onClick={onClose}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+          <TextField
+            fullWidth
+            multiline
+            rows={4}
+            label="Comment"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Add notes or comments for this day..."
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSave} variant="contained">
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
