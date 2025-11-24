@@ -1,6 +1,6 @@
 # Co-Parenting Calendar
 
-A full-stack web application for managing 50/50 co-parenting schedules with React/TypeScript frontend, C# backend, and PostgreSQL database.
+A full-stack web application for managing 50/50 co-parenting schedules with React/TypeScript frontend, C# backend, and PostgreSQL database. Features Google authentication, demo mode, and invitation system for secondary parents.
 
 **🚀 New to the project?** Check out the [Quick Start Guide](./QUICKSTART.md) to get running in under 5 minutes!
 
@@ -10,14 +10,16 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 
 **Frontend:**
 - React 18 with TypeScript
+- Material UI (MUI) component library
 - Vite build tool
-- Component-based architecture
+- Modern, responsive design
 - Served by backend as static files
 
 **Backend:**
-- .NET 8 C# Minimal API
-- Entity Framework Core (Database First)
+- .NET 10 C# Minimal API
+- Entity Framework Core 10
 - PostgreSQL 16
+- Google OAuth 2.0 authentication
 - Well-structured layered architecture
 - Serves frontend static files from wwwroot
 
@@ -29,6 +31,12 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 - Health checks and dependency management
 
 ## Features
+
+### Authentication & User Management
+- **Google Sign-In**: Secure authentication using Google accounts
+- **Demo Mode**: Try the app without signing in for testing and demonstrations
+- **Multi-User Support**: Each user has their own calendar data
+- **Invitation System**: Invite another Google account to co-parent a child
 
 ### Core Functionality
 - **Single Month View**: View and manage one month at a time with navigation
@@ -48,6 +56,7 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 - **Data Persistence**: All data stored in PostgreSQL database
 - **Import/Export**: Backup and restore your calendar data
 - **API Documentation**: Swagger UI available in development mode
+- **Material UI Design**: Modern, professional interface with consistent styling
 
 ## Quick Start
 
@@ -298,9 +307,9 @@ E2E Testing jobs:
 ### Build Requirements
 
 **Backend:**
-- .NET 8 SDK
+- .NET 10 SDK
 - C# 10 or later
-- SQL Server 2022 (or Docker)
+- PostgreSQL 16 (or Docker)
 
 **Frontend:**
 - Node.js 18+ (20 recommended)
@@ -419,18 +428,36 @@ selmaschema/
 
 ## API Endpoints
 
+### Authentication
+- `GET /api/auth/login` - Redirect to Google OAuth login
+- `GET /api/auth/google-callback` - Google OAuth callback
+- `POST /api/auth/demo` - Create demo session
+- `POST /api/auth/logout` - Logout current user
+- `GET /api/auth/user` - Get current user info
+
+### Children Management
+- `GET /api/children` - Get all children for current user
+- `POST /api/children` - Create a new child
+- `PUT /api/children/{id}` - Update child information
+
+### Invitations
+- `GET /api/invitations/pending` - Get pending invitations for current user
+- `POST /api/invitations` - Send an invitation to co-parent
+- `POST /api/invitations/{id}/accept` - Accept an invitation
+- `POST /api/invitations/{id}/decline` - Decline an invitation
+
 ### Day Assignments
-- `GET /api/days/{year}/{month}` - Get all assignments for a month
-- `GET /api/days/{year}/{month}/{day}` - Get specific day assignment
-- `PUT /api/days/{year}/{month}/{day}` - Create/update day assignment
-- `POST /api/days/{year}/{month}/initialize` - Initialize month with default pattern
+- `GET /api/days/{year}/{month}` - Get all assignments for a month (requires auth)
+- `GET /api/days/{year}/{month}/{day}` - Get specific day assignment (requires auth)
+- `PUT /api/days/{year}/{month}/{day}` - Create/update day assignment (requires auth)
+- `POST /api/days/{year}/{month}/initialize` - Initialize month with default pattern (requires auth)
 
 ### Configuration
-- `GET /api/config/parent-names` - Get parent names
-- `PUT /api/config/parent-names` - Update parent names
+- `GET /api/config/parent-names` - Get parent names (requires auth)
+- `PUT /api/config/parent-names` - Update parent names (requires auth)
 
 ### Statistics
-- `GET /api/statistics/{year}` - Get year statistics
+- `GET /api/statistics/{year}` - Get year statistics (requires auth)
 
 ## Default Week Assignment Logic
 
