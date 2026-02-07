@@ -7,7 +7,9 @@ public static class ConfigurationEndpoints
 {
     public static void MapConfigurationEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/config").WithTags("Configuration");
+        var group = app.MapGroup("/api/config")
+            .WithTags("Configuration")
+            .RequireAuthorization();
 
         // GET /api/config/parent-names
         group.MapGet("/parent-names", async (ConfigurationService service) =>

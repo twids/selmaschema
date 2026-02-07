@@ -18,13 +18,16 @@ public class DayAssignment
     /// Whether this is a VAB (Vård av Barn - child care leave) day
     /// </summary>
     public bool IsVAB { get; set; }
-    
+
     /// <summary>
-    /// Optional comment for the day
+    /// Special status: NULL, 'PreschoolClosed', 'Holiday', etc.
     /// </summary>
-    public string? Comment { get; set; }
-    
+    public string? SpecialStatus { get; set; }
+
     public DateTime CreatedAt { get; set; }
     
     public DateTime? ModifiedAt { get; set; }
+    
+    // Navigation property
+    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }

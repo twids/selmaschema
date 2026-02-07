@@ -21,11 +21,12 @@ public class DayAssignmentService
     /// </summary>
     public async Task<List<DayAssignment>> GetMonthAssignmentsAsync(int year, int month)
     {
-        var startDate = new DateTime(year, month, 1);
+        var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
         return await _context.DayAssignments
-            .Where(d => d.Date >= startDate && d.Date <= endDate)
+            .Include(d => d.Comments)
+            .Where(d => d.Date.Year == year && d.Date.Month == month)
             .OrderBy(d => d.Date)
             .ToListAsync();
     }
@@ -35,14 +36,16 @@ public class DayAssignmentService
     /// </summary>
     public async Task<DayAssignment?> GetDayAssignmentAsync(DateTime date)
     {
+        var utcDate = date.Kind == DateTimeKind.Unspecified ? new DateTime(date.Ticks, DateTimeKind.Utc) : date.ToUniversalTime();
         return await _context.DayAssignments
-            .FirstOrDefaultAsync(d => d.Date.Date == date.Date);
+            .Include(d => d.Comments)
+            .FirstOrDefaultAsync(d => d.Date.Date == utcDate.Date);
     }
 
     /// <summary>
     /// Creates or updates a day assignment
     /// </summary>
-    public async Task<DayAssignment> UpsertDayAssignmentAsync(DateTime date, string? parent, bool isVAB, string? comment)
+    public async Task<DayAssignment> UpsertDayAssignmentAsync(DateTime date, string? parent, bool isVAB, string? specialStatus)
     {
         var existing = await GetDayAssignmentAsync(date);
 
@@ -50,18 +53,19 @@ public class DayAssignmentService
         {
             existing.Parent = parent;
             existing.IsVAB = isVAB;
-            existing.Comment = comment;
+            existing.SpecialStatus = specialStatus;
             existing.ModifiedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return existing;
         }
 
+        var utcDate = date.Kind == DateTimeKind.Unspecified ? new DateTime(date.Ticks, DateTimeKind.Utc) : date.ToUniversalTime();
         var newAssignment = new DayAssignment
         {
-            Date = date.Date,
+            Date = new DateTime(utcDate.Year, utcDate.Month, utcDate.Day, 0, 0, 0, DateTimeKind.Utc),
             Parent = parent,
             IsVAB = isVAB,
-            Comment = comment,
+            SpecialStatus = specialStatus,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -76,21 +80,21 @@ public class DayAssignmentService
     /// </summary>
     public async Task<List<DayAssignment>> InitializeMonthWithDefaultsAsync(int year, int month)
     {
-        var startDate = new DateTime(year, month, 1);
+        var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         var daysInMonth = DateTime.DaysInMonth(year, month);
-        var endDate = new DateTime(year, month, daysInMonth);
-        
+
         // Fetch all existing assignments for the month in a single query
         var existingAssignments = await _context.DayAssignments
-            .Where(d => d.Date >= startDate && d.Date <= endDate)
+            .Include(d => d.Comments)
+            .Where(d => d.Date.Year == year && d.Date.Month == month)
             .ToDictionaryAsync(d => d.Date.Date, d => d);
-        
+
         var assignments = new List<DayAssignment>();
 
         for (int day = 1; day <= daysInMonth; day++)
         {
-            var date = new DateTime(year, month, day);
-            
+            var date = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+
             // Skip if already assigned
             if (existingAssignments.TryGetValue(date, out var existing))
             {
@@ -98,18 +102,18 @@ public class DayAssignmentService
                 continue;
             }
 
-            // Determine week number (ISO 8601 week numbering)
-            var weekNumber = GetIso8601WeekNumber(date);
-            
+            // Determine week number (starts on Monday)
+            var weekNumber = GetWeekNumber(date);
+
             // Odd weeks = Parent A, Even weeks = Parent B
             var parent = weekNumber % 2 == 1 ? "A" : "B";
 
             var assignment = new DayAssignment
             {
-                Date = date,
+                Date = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc),
                 Parent = parent,
                 IsVAB = false,
-                Comment = null,
+                SpecialStatus = null,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -122,20 +126,19 @@ public class DayAssignmentService
     }
 
     /// <summary>
-    /// Gets ISO 8601 week number (week starts on Monday)
+    /// Gets week number where weeks start on Monday (exchange day)
+    /// Week 1 = from first Monday of month onwards (or from day 1 if month starts on Mon-Sun before first Mon)
     /// </summary>
-    private static int GetIso8601WeekNumber(DateTime date)
+    private static int GetWeekNumber(DateTime date)
     {
-        var day = System.Globalization.CultureInfo.InvariantCulture.Calendar.GetDayOfWeek(date);
-        if (day >= DayOfWeek.Monday && day <= DayOfWeek.Wednesday)
-        {
-            date = date.AddDays(3);
-        }
-
-        return System.Globalization.CultureInfo.InvariantCulture.Calendar.GetWeekOfYear(
-            date,
-            System.Globalization.CalendarWeekRule.FirstFourDayWeek,
-            DayOfWeek.Monday);
+        // Get the first day of the month
+        var firstDay = new DateTime(date.Year, date.Month, 1);
+        // Get the Monday of the week containing the first day (may be in previous month)
+        // DayOfWeek: Sunday=0, Monday=1, ..., Saturday=6
+        var firstMonday = firstDay.AddDays(1 - (int)firstDay.DayOfWeek);
+        // Count weeks from first Monday to current date
+        var weekNumber = (int)((date - firstMonday).TotalDays / 7) + 1;
+        return weekNumber;
     }
 
     /// <summary>
@@ -143,18 +146,16 @@ public class DayAssignmentService
     /// </summary>
     public async Task<(int parentA, int parentB, int vab, int unassigned, int withComments)> GetYearStatisticsAsync(int year)
     {
-        var startDate = new DateTime(year, 1, 1);
-        var endDate = new DateTime(year, 12, 31);
-        var daysInYear = endDate.DayOfYear;
-
         var assignments = await _context.DayAssignments
-            .Where(d => d.Date >= startDate && d.Date <= endDate)
+            .Include(d => d.Comments)
+            .Where(d => d.Date.Year == year)
             .ToListAsync();
 
+        var daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
         var parentA = assignments.Count(a => a.Parent == "A");
         var parentB = assignments.Count(a => a.Parent == "B");
         var vab = assignments.Count(a => a.IsVAB);
-        var withComments = assignments.Count(a => !string.IsNullOrEmpty(a.Comment));
+        var withComments = assignments.Count(a => a.Comments.Any());
         var unassigned = daysInYear - parentA - parentB;
 
         return (parentA, parentB, vab, unassigned, withComments);

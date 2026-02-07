@@ -8,7 +8,9 @@ public static class DayAssignmentEndpoints
 {
     public static void MapDayAssignmentEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/days").WithTags("Day Assignments");
+        var group = app.MapGroup("/api/days")
+            .WithTags("Day Assignments")
+            .RequireAuthorization();
 
         // GET /api/days/{year}/{month}
         group.MapGet("/{year}/{month}", async (int year, int month, DayAssignmentService service) =>
@@ -24,12 +26,12 @@ public static class DayAssignmentEndpoints
         // GET /api/days/{year}/{month}/{day}
         group.MapGet("/{year}/{month}/{day}", async (int year, int month, int day, DayAssignmentService service) =>
         {
-            var date = new DateTime(year, month, day);
+            var date = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
             var assignment = await service.GetDayAssignmentAsync(date);
-            
+
             if (assignment == null)
                 return Results.NotFound();
-                
+
             return Results.Ok(MapToDto(assignment));
         })
         .WithName("GetDayAssignment")
@@ -40,8 +42,8 @@ public static class DayAssignmentEndpoints
         // PUT /api/days/{year}/{month}/{day}
         group.MapPut("/{year}/{month}/{day}", async (int year, int month, int day, UpdateDayAssignmentDto dto, DayAssignmentService service) =>
         {
-            var date = new DateTime(year, month, day);
-            var assignment = await service.UpsertDayAssignmentAsync(date, dto.Parent, dto.IsVAB, dto.Comment);
+            var date = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+            var assignment = await service.UpsertDayAssignmentAsync(date, dto.Parent, dto.IsVAB, dto.SpecialStatus);
             return Results.Ok(MapToDto(assignment));
         })
         .WithName("UpdateDayAssignment")
@@ -62,12 +64,26 @@ public static class DayAssignmentEndpoints
 
     private static DayAssignmentDto MapToDto(DayAssignment assignment)
     {
+        var parentAComments = assignment.Comments
+            .Where(c => c.Parent == "A")
+            .Select(c => new CommentDto(c.Id, c.DayAssignmentId, c.Parent, c.CommentText, c.CreatedAt, c.ModifiedAt))
+            .OrderBy(c => c.CreatedAt)
+            .ToList();
+
+        var parentBComments = assignment.Comments
+            .Where(c => c.Parent == "B")
+            .Select(c => new CommentDto(c.Id, c.DayAssignmentId, c.Parent, c.CommentText, c.CreatedAt, c.ModifiedAt))
+            .OrderBy(c => c.CreatedAt)
+            .ToList();
+
         return new DayAssignmentDto(
             assignment.Id,
             assignment.Date,
             assignment.Parent,
             assignment.IsVAB,
-            assignment.Comment
+            assignment.SpecialStatus,
+            parentAComments,
+            parentBComments
         );
     }
 }

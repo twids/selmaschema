@@ -1,6 +1,8 @@
+using CoParenting.API.Authentication;
 using CoParenting.API.Endpoints;
 using CoParenting.API.Services;
 using CoParenting.Infrastructure.Data;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +21,13 @@ builder.Services.AddDbContext<CoParentingDbContext>(options =>
 // Add application services
 builder.Services.AddScoped<DayAssignmentService>();
 builder.Services.AddScoped<ConfigurationService>();
+builder.Services.AddScoped<CommentService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Add authentication and authorization
+builder.Services.AddAuthentication("SessionAuth")
+    .AddScheme<AuthenticationSchemeOptions, SessionAuthenticationHandler>("SessionAuth", null);
+builder.Services.AddAuthorization();
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -42,8 +51,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowFrontend");
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 // Map API endpoints first
+app.MapAuthEndpoints();
+app.MapAdminEndpoints();
 app.MapDayAssignmentEndpoints();
+app.MapCommentEndpoints();
 app.MapConfigurationEndpoints();
 app.MapStatisticsEndpoints();
 
