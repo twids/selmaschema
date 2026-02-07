@@ -24,6 +24,7 @@ builder.Services.AddScoped<IDayAssignmentService, DayAssignmentService>();
 builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IChangeRequestService, ChangeRequestService>();
 
 // Add authentication and authorization
 builder.Services.AddAuthentication("SessionAuth")
@@ -66,6 +67,7 @@ app.MapDayAssignmentEndpoints();
 app.MapCommentEndpoints();
 app.MapConfigurationEndpoints();
 app.MapStatisticsEndpoints();
+app.MapChangeRequestEndpoints();
 
 // Serve static files from wwwroot (frontend build)
 app.UseDefaultFiles();

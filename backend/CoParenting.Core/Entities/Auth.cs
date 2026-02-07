@@ -38,7 +38,7 @@ public class ChangeRequest
     public int Id { get; set; }
     public int RequestedByUserId { get; set; }
     public User RequestedByUser { get; set; } = null!;
-    public DateTime RequestedForDate { get; set; }
+    public DateOnly RequestedForDate { get; set; }
     public string CurrentParent { get; set; } = string.Empty;
     public string RequestedParent { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty; // Pending, Approved, Rejected

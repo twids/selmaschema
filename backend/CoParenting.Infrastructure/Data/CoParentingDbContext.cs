@@ -145,7 +145,7 @@ public class CoParentingDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.RequestedByUserId).HasColumnName("requestedbyuserid");
-            entity.Property(e => e.RequestedForDate).HasColumnName("requestedfordate");
+            entity.Property(e => e.RequestedForDate).HasColumnName("requestedfordate").HasColumnType("date");
             entity.Property(e => e.CurrentParent).HasColumnName("currentparent").HasMaxLength(10).IsRequired();
             entity.Property(e => e.RequestedParent).HasColumnName("requestedparent").HasMaxLength(10).IsRequired();
             entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(50).IsRequired();
