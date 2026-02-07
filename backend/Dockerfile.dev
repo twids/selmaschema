@@ -22,8 +22,8 @@ COPY . .
 # Expose port
 EXPOSE 8080
 
+# Don't set WORKDIR here, let docker-compose handle it
 # Default command for development (with hot reload)
-WORKDIR /src/CoParenting.API
 CMD ["dotnet", "watch", "run", "--no-launch-profile"]
 
 # Production build stage

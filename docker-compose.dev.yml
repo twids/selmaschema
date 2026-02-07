@@ -12,13 +12,7 @@ services:
     volumes:
       # Mount source code for hot reload
       - ./backend:/src
-      # Preserve build artifacts in anonymous volumes for performance
-      - /src/CoParenting.API/bin
-      - /src/CoParenting.API/obj
-      - /src/CoParenting.Core/bin
-      - /src/CoParenting.Core/obj
-      - /src/CoParenting.Infrastructure/bin
-      - /src/CoParenting.Infrastructure/obj
+      # Note: bin and obj directories will be managed by dotnet watch
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
@@ -26,15 +20,16 @@ services:
       - DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER=1
       # Enable debugging
       - VSDBG_PATH=/vsdbg
-      - ConnectionStrings__DefaultConnection=Host=db;Database=CoParentingCalendar;Username=postgres;Password=YourStrong@Passw0rd
+      - ConnectionStrings__DefaultConnection=Host=selmadb;Database=CoParentingCalendar;Username=postgres;Password=YourStrong@Passw0rd
     ports:
       - "8080:8080"
     depends_on:
-      db:
+      selmadb:
         condition: service_healthy
     networks:
       - coparenting-network
-    command: dotnet watch run --project /src/CoParenting.API/CoParenting.API.csproj --no-launch-profile
+    working_dir: /src/CoParenting.API
+    command: sh -c "ls -la && dotnet watch run --no-launch-profile"
 
   # Frontend with hot reload (Vite dev server)
   frontend:
@@ -52,7 +47,7 @@ services:
       - NODE_ENV=development
       - VITE_API_URL=http://localhost:8080
     ports:
-      - "5173:5173"  # Vite dev server default port
+      - "5173:5173" # Vite dev server default port
     networks:
       - coparenting-network
     command: npm run dev -- --host 0.0.0.0

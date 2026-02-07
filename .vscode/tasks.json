@@ -15,6 +15,11 @@
       "group": {
         "kind": "build",
         "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "revealProblems": "onProblem",
+        "close": true
       }
     },
     {
@@ -29,7 +34,12 @@
         "--configuration",
         "Release"
       ],
-      "problemMatcher": "$msCompile"
+      "problemMatcher": "$msCompile",
+      "presentation": {
+        "reveal": "always",
+        "revealProblems": "onProblem",
+        "close": true
+      }
     },
     {
       "label": "watch-backend",
@@ -58,6 +68,11 @@
       "group": {
         "kind": "test",
         "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "revealProblems": "onProblem",
+        "close": true
       }
     },
     {
@@ -68,7 +83,12 @@
       "options": {
         "cwd": "${workspaceFolder}/frontend"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "revealProblems": "onProblem",
+        "close": true
+      }
     },
     {
       "label": "start-frontend-dev",
@@ -80,6 +100,12 @@
       },
       "isBackground": true,
       "problemMatcher": {
+        "pattern": {
+          "regexp": "^.*$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
         "background": {
           "activeOnStart": true,
           "beginsPattern": "VITE.*ready in",
@@ -97,7 +123,12 @@
         "cwd": "${workspaceFolder}/frontend"
       },
       "problemMatcher": [],
-      "group": "build"
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "revealProblems": "onProblem",
+        "close": true
+      }
     },
     {
       "label": "lint-frontend",
@@ -107,7 +138,12 @@
       "options": {
         "cwd": "${workspaceFolder}/frontend"
       },
-      "problemMatcher": ["$eslint-stylish"]
+      "problemMatcher": ["$eslint-stylish"],
+      "presentation": {
+        "reveal": "always",
+        "revealProblems": "onProblem",
+        "close": true
+      }
     },
     {
       "label": "docker-compose-up",
@@ -123,7 +159,15 @@
       "label": "docker-compose-up-dev",
       "type": "shell",
       "command": "docker",
-      "args": ["compose", "-f", "docker-compose.yml", "-f", "docker-compose.dev.yml", "up", "-d"],
+      "args": [
+        "compose",
+        "-f",
+        "docker-compose.yml",
+        "-f",
+        "docker-compose.dev.yml",
+        "up",
+        "-d"
+      ],
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -147,7 +191,12 @@
       "options": {
         "cwd": "${workspaceFolder}"
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "revealProblems": "onProblem",
+        "close": true
+      }
     },
     {
       "label": "docker-logs-api",

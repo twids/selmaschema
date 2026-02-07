@@ -28,10 +28,25 @@ print_warning() {
     echo -e "${YELLOW}!${NC} $1"
 }
 
-# Check if we're in the right directory
+# Ensure PATH includes .NET global tools for this session
+export PATH="$PATH:/home/vscode/.dotnet/tools"
+
+# Check workspace root (informative only)
 if [ ! -f "docker-compose.yml" ]; then
-    print_warning "docker-compose.yml not found, changing to /workspace"
-    cd /workspace || exit 1
+    print_warning "docker-compose.yml not found in $(pwd). Continuing anyway."
+fi
+
+# Install .NET global tools (best-effort)
+print_status "Installing .NET global tools (ef, format)..."
+if dotnet tool install --global dotnet-ef >/dev/null 2>&1; then
+    print_success "dotnet-ef installed"
+else
+    print_warning "dotnet-ef install failed; will skip. You can install later."
+fi
+if dotnet tool install --global dotnet-format >/dev/null 2>&1; then
+    print_success "dotnet-format installed"
+else
+    print_warning "dotnet-format install failed; will skip. You can install later."
 fi
 
 # Restore .NET dependencies
@@ -64,7 +79,7 @@ fi
 
 # Configure git
 print_status "Configuring git..."
-git config --add safe.directory /workspace
+git config --add safe.directory "$(pwd)"
 git config core.autocrlf input
 print_success "Git configured"
 

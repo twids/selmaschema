@@ -9,12 +9,14 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 ### Technology Stack
 
 **Frontend:**
+
 - React 18 with TypeScript
 - Vite build tool
 - Component-based architecture
 - Served by backend as static files
 
 **Backend:**
+
 - .NET 8 C# Minimal API
 - Entity Framework Core (Database First)
 - PostgreSQL 16
@@ -22,6 +24,7 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 - Serves frontend static files from wwwroot
 
 **Infrastructure:**
+
 - Docker & Docker Compose
 - PostgreSQL in container
 - Multi-stage Docker builds
@@ -31,6 +34,7 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 ## Features
 
 ### Core Functionality
+
 - **Single Month View**: View and manage one month at a time with navigation
 - **Default Week Assignment**: Automatically assigns odd weeks (Monday-Sunday) to Parent A and even weeks to Parent B
 - **50/50 Split Management**: Easily assign days to either parent
@@ -39,8 +43,9 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 - **Day Swapping**: Change and reassign days between parents as needed
 
 ### Additional Features
+
 - **Custom Parent Names**: Personalize the calendar with actual parent names (stored in database)
-- **Month Actions**: 
+- **Month Actions**:
   - Initialize month with defaults (odd/even week pattern)
   - Fill entire months with one parent
   - Alternate days automatically
@@ -52,6 +57,7 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 ## Quick Start
 
 ### Prerequisites
+
 - Docker Desktop installed (includes Docker Compose V2)
 - Ports 5432 and 3000 available
 
@@ -60,12 +66,14 @@ A full-stack web application for managing 50/50 co-parenting schedules with Reac
 ### Running the Application
 
 1. **Clone the repository**
+
 ```bash
 git clone <repository-url>
 cd selmaschema
 ```
 
 2. **Start all services**
+
 ```bash
 # Docker Compose V2 (recommended)
 docker compose up --build
@@ -75,11 +83,13 @@ docker-compose up --build
 ```
 
 This will:
+
 - Start PostgreSQL database on port 5432
 - Initialize database schema automatically
 - Build and start unified application (backend + frontend) on port 3000
 
 3. **Access the application**
+
 - Application: http://localhost:3000
 - API: http://localhost:3000/api
 - Swagger UI: http://localhost:3000/swagger
@@ -92,6 +102,7 @@ docker compose down
 ```
 
 To remove data volumes:
+
 ```bash
 docker compose down -v
 # or: docker-compose down -v
@@ -102,6 +113,7 @@ docker compose down -v
 ### Using Build Scripts (Recommended)
 
 **Linux/Mac:**
+
 ```bash
 # Build everything
 ./build.sh all
@@ -123,6 +135,7 @@ docker compose down -v
 ```
 
 **Windows:**
+
 ```cmd
 REM Build everything
 build.bat all
@@ -171,10 +184,12 @@ make clean-all
 #### Backend Build
 
 **Prerequisites:**
+
 - .NET 8 SDK installed
 - SQL Server running (or use Docker)
 
 **Steps:**
+
 ```bash
 # Navigate to backend API project
 cd backend/CoParenting.API
@@ -193,6 +208,7 @@ dotnet publish --configuration Release --output ./publish
 ```
 
 **Run tests:**
+
 ```bash
 cd backend
 dotnet test --configuration Release
@@ -201,10 +217,12 @@ dotnet test --configuration Release
 #### Frontend Build
 
 **Prerequisites:**
+
 - Node.js 18+ installed
 - npm installed
 
 **Steps:**
+
 ```bash
 # Navigate to frontend
 cd frontend
@@ -226,18 +244,21 @@ npm run lint
 ```
 
 **Output:**
+
 - Development server: http://localhost:5173
 - Production build: `frontend/dist/` directory
 
 #### Docker Build
 
 **Build unified image:**
+
 ```bash
 # Build application image (backend + frontend)
 docker build -t coparenting-app:latest .
 ```
 
 **Build with Docker Compose:**
+
 ```bash
 # Build all services
 docker compose build
@@ -253,10 +274,12 @@ The project includes GitHub Actions workflows for automated building and testing
 **Workflow: `.github/workflows/ci-cd.yml`**
 
 Triggers on:
+
 - Push to `main`, `develop`, or `copilot/**` branches
 - Pull requests to `main` or `develop`
 
 Build jobs:
+
 1. **Build** - Builds frontend and backend together, runs tests, creates artifacts
 2. **Docker Build** - Builds unified Docker image and validates Docker Compose configuration
 3. **Integration Tests** - Tests services working together
@@ -265,19 +288,23 @@ Build jobs:
 **Docker Images:**
 
 After successful merge to `main`, Docker image is automatically published to GitHub Container Registry:
+
 - `ghcr.io/twids/selmaschema/coparenting-app:latest`
 
 Images are tagged with:
+
 - `latest` - Latest stable version from main branch
 - `main-<commit-sha>` - Specific commit from main branch
 
 **Workflow: `.github/workflows/e2e-tests.yml`**
 
 Triggers on:
+
 - Push to `main`, `develop`, or `copilot/**` branches
 - Pull requests to `main` or `develop`
 
 E2E Testing jobs:
+
 1. **E2E Tests** - Runs comprehensive end-to-end tests with Playwright
    - Starts all services with Docker Compose
    - Waits for services to be healthy
@@ -286,11 +313,13 @@ E2E Testing jobs:
    - **Fails PR builds if tests fail**
 
 **Artifacts generated:**
+
 - `application-build` - Published .NET application with frontend
 - `e2e-test-results` - Test execution results and screenshots
 - `e2e-test-report` - HTML test report (7 days retention)
 
 **Note on Docker Compose:**
+
 - CI/CD uses Docker Compose V2 (`docker compose` command)
 - Local development supports both `docker compose` (V2) and `docker-compose` (V1)
 - If using older Docker versions, install Docker Compose V1 separately
@@ -298,20 +327,24 @@ E2E Testing jobs:
 ### Build Requirements
 
 **Backend:**
+
 - .NET 8 SDK
 - C# 10 or later
 - SQL Server 2022 (or Docker)
 
 **Frontend:**
+
 - Node.js 18+ (20 recommended)
 - npm 9+
 - Modern browser for testing
 
 **Docker:**
+
 - Docker Engine 20+
 - Docker Compose 2+
 
 **Build times (approximate):**
+
 - Backend: 30-60 seconds
 - Frontend: 60-90 seconds
 - Docker images: 3-5 minutes
@@ -323,6 +356,7 @@ docker-compose down
 ```
 
 To remove data volumes:
+
 ```bash
 docker-compose down -v
 ```
@@ -334,6 +368,7 @@ For detailed local development instructions, debugging, and troubleshooting, see
 ### Quick Development Setup
 
 **Option 1: Docker with Hot Reload (Recommended for Development)**
+
 ```bash
 # Start all services with hot reload enabled
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up
@@ -349,6 +384,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 **Option 2: Native Development**
 
 Frontend:
+
 ```bash
 cd frontend
 npm install
@@ -357,6 +393,7 @@ npm run dev
 ```
 
 Backend:
+
 ```bash
 cd backend/CoParenting.API
 dotnet restore
@@ -382,10 +419,12 @@ See [DEVELOPMENT.md](./DEVELOPMENT.md) for comprehensive debugging guides and tr
 The database schema is automatically created using the init-db.sql script. The schema includes:
 
 **Tables:**
+
 - `DayAssignments` - Stores day-by-day parenting assignments
 - `Configurations` - Stores application settings (parent names, etc.)
 
 To modify the schema, update:
+
 1. Entity models in `backend/CoParenting.Core/Entities/`
 2. DbContext in `backend/CoParenting.Infrastructure/Data/`
 3. SQL script in `backend/init-db.sql`
@@ -401,7 +440,7 @@ selmaschema/
 │   │   ├── DTOs/                 # Data transfer objects
 │   │   └── wwwroot/              # Frontend build output (generated)
 │   ├── CoParenting.Core/         # Domain entities
-│   │   └── Entities/            
+│   │   └── Entities/
 │   ├── CoParenting.Infrastructure/ # Data access layer
 │   │   └── Data/                 # EF Core DbContext
 │   ├── init-db.sql               # Database initialization script
@@ -420,21 +459,25 @@ selmaschema/
 ## API Endpoints
 
 ### Day Assignments
+
 - `GET /api/days/{year}/{month}` - Get all assignments for a month
 - `GET /api/days/{year}/{month}/{day}` - Get specific day assignment
 - `PUT /api/days/{year}/{month}/{day}` - Create/update day assignment
 - `POST /api/days/{year}/{month}/initialize` - Initialize month with default pattern
 
 ### Configuration
+
 - `GET /api/config/parent-names` - Get parent names
 - `PUT /api/config/parent-names` - Update parent names
 
 ### Statistics
+
 - `GET /api/statistics/{year}` - Get year statistics
 
 ## Default Week Assignment Logic
 
 The application uses ISO 8601 week numbering (weeks start on Monday):
+
 - **Odd weeks (1, 3, 5...)**: Assigned to Parent A
 - **Even weeks (2, 4, 6...)**: Assigned to Parent B
 
@@ -443,6 +486,7 @@ This provides a fair 50/50 split over time.
 ## Database Configuration
 
 **Connection String:** (in docker-compose.yml and appsettings.json)
+
 ```
 Host=db;Database=CoParentingCalendar;Username=postgres;Password=YourStrong@Passw0rd
 ```
@@ -452,12 +496,14 @@ Host=db;Database=CoParentingCalendar;Username=postgres;Password=YourStrong@Passw
 ## Testing
 
 ### Backend Tests
+
 ```bash
 cd backend
 dotnet test
 ```
 
 ### Frontend Tests
+
 ```bash
 cd frontend
 npm test
@@ -468,9 +514,11 @@ npm test
 Comprehensive E2E tests cover all major functionality using Playwright.
 
 **Prerequisites:**
+
 - Application services running via `docker compose up`
 
 **Run tests:**
+
 ```bash
 cd e2e-tests
 npm install
@@ -479,24 +527,28 @@ npm test
 ```
 
 **View test report:**
+
 ```bash
 cd e2e-tests
 npm run test:report
 ```
 
 **Run tests in headed mode (with visible browser):**
+
 ```bash
 cd e2e-tests
 npm run test:headed
 ```
 
 **Debug tests:**
+
 ```bash
 cd e2e-tests
 npm run test:debug
 ```
 
 **Test Coverage:**
+
 - API health and configuration endpoints
 - Calendar navigation and UI
 - Day assignment operations
@@ -516,6 +568,7 @@ E2E tests run automatically on every pull request. Check the "E2E Tests" workflo
 ### Build Issues
 
 **Backend build fails:**
+
 ```bash
 # Clear NuGet cache
 dotnet nuget locals all --clear
@@ -528,6 +581,7 @@ dotnet --version  # Should be 8.0.x
 ```
 
 **Frontend build fails:**
+
 ```bash
 # Clear npm cache
 npm cache clean --force
@@ -541,6 +595,7 @@ node --version  # Should be 18+ or 20+
 ```
 
 **Docker build fails:**
+
 ```bash
 # Check Docker is running
 docker ps
@@ -553,18 +608,21 @@ docker-compose build --no-cache
 ```
 
 ### Database Connection Issues
+
 - Ensure SQL Server container is healthy: `docker-compose ps`
 - Check logs: `docker-compose logs db`
 - Verify connection string in appsettings.json
 - Wait 30 seconds for SQL Server to fully start
 
 ### API Not Starting
+
 - Check API logs: `docker-compose logs api`
 - Ensure port 8080 is available: `lsof -i :8080` (Linux/Mac) or `netstat -ano | findstr :8080` (Windows)
 - Verify database is accessible
 - Check for .NET runtime: `dotnet --info`
 
 ### Frontend Build Errors
+
 - Check node version (requires Node 18+): `node --version`
 - Clear node_modules: `rm -rf node_modules && npm install`
 - Check frontend logs: `docker-compose logs frontend`
@@ -583,3 +641,49 @@ docker-compose build --no-cache
 ## Support
 
 For issues or questions, please open an issue on the GitHub repository.
+
+## 🚀 GitHub Copilot Custom Workflows & Awesome-Copilot Integration
+
+This project is ready to leverage advanced AI workflows using [Awesome GitHub Copilot](https://github.com/github/awesome-copilot) prompts, instructions, and agents. These tools help automate code review, debugging, research, and more—directly in VS Code.
+
+### 1. Install the MCP Server Extension
+
+- [Install in VS Code](https://aka.ms/awesome-copilot/mcp/vscode)
+- [Install in VS Code Insiders](https://aka.ms/awesome-copilot/mcp/vscode-insiders)
+- [Install in Visual Studio](https://aka.ms/awesome-copilot/mcp/vs)
+
+The MCP Server lets you search, install, and use custom prompts, instructions, and chat modes from the awesome-copilot collection.
+
+### 2. Using Prompts, Instructions, and Agents
+
+- **Prompts**: Use `/awesome-copilot <prompt>` in Copilot Chat (e.g., `/awesome-copilot create-readme`)
+- **Instructions**: Automatically apply to files based on patterns, providing best practices and standards
+- **Agents**: Activate specialized agents (e.g., code reviewer, debugger, researcher) for focused workflows
+
+See:
+
+- [Prompts Documentation](https://github.com/github/awesome-copilot/blob/main/docs/README.prompts.md)
+- [Instructions Documentation](https://github.com/github/awesome-copilot/blob/main/docs/README.instructions.md)
+- [Agents Documentation](https://github.com/github/awesome-copilot/blob/main/docs/README.agents.md)
+
+### 3. Example Workflows Enabled
+
+- **Automated Code Review**: Use the code-reviewer agent to check for quality, security, and maintainability after every change
+- **Debugging**: Invoke the debugger agent when encountering errors or test failures for root cause analysis and minimal fixes
+- **Research & Refactoring**: Use the researcher agent to understand code, find patterns, and plan changes
+- **Test & Commit Automation**: Use test-and-commit commands to run all checks and create atomic commits
+
+### 4. Project Management Recommendations
+
+- Use Copilot prompts and agents proactively (not just reactively)
+- Integrate code review and debugging agents into your PR and commit workflows
+- Keep your prompts, instructions, and agents up to date with the latest from awesome-copilot
+- Document custom workflows in your repo for team onboarding
+
+### 5. Learn More
+
+- [Awesome Copilot GitHub](https://github.com/github/awesome-copilot)
+- [VS Code Copilot Customization Docs](https://code.visualstudio.com/docs/copilot/copilot-customization)
+- [Copilot Chat Modes](https://code.visualstudio.com/docs/copilot/chat/chat-modes)
+
+Ready to supercharge your development? Start using `/awesome-copilot` prompts and agents in your Copilot Chat today!

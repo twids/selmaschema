@@ -37,5 +37,8 @@
   // C# Dev Kit uses a different language server and ignores these settings
   "omnisharp.enableRoslynAnalyzers": true,
   "omnisharp.enableEditorConfigSupport": true,
-  "docker.showStartPage": false
+  "docker.showStartPage": false,
+  // GitHub Copilot Configuration
+  "github.copilot.chat.agentDirectory": ".github/agents",
+  "github.copilot.chat.scopeSelection": true
 }
