@@ -26,7 +26,7 @@ public static class DayAssignmentEndpoints
         // GET /api/days/{year}/{month}/{day}
         group.MapGet("/{year}/{month}/{day}", async (int year, int month, int day, IDayAssignmentService service) =>
         {
-            var date = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+            var date = new DateOnly(year, month, day);
             var assignment = await service.GetDayAssignmentAsync(date);
 
             if (assignment == null)
@@ -42,7 +42,7 @@ public static class DayAssignmentEndpoints
         // PUT /api/days/{year}/{month}/{day}
         group.MapPut("/{year}/{month}/{day}", async (int year, int month, int day, UpdateDayAssignmentDto dto, IDayAssignmentService service) =>
         {
-            var date = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+            var date = new DateOnly(year, month, day);
             var assignment = await service.UpsertDayAssignmentAsync(date, dto.Parent, dto.IsVAB, dto.SpecialStatus);
             return Results.Ok(MapToDto(assignment));
         })

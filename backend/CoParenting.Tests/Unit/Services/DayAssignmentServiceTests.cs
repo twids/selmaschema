@@ -42,7 +42,7 @@ public class DayAssignmentServiceTests : IDisposable
     public void GetWeekNumber_MonthStartsOnMonday_ShouldReturnWeek1()
     {
         // Arrange: June 1, 2026 is a Monday
-        var date = new DateTime(2026, 6, 1);
+        var date = new DateOnly(2026, 6, 1);
 
         // Act: Use reflection to call private method
         var weekNumber = CallGetWeekNumber(date);
@@ -55,7 +55,7 @@ public class DayAssignmentServiceTests : IDisposable
     public void GetWeekNumber_MonthStartsOnSunday_FirstDayIsWeek1()
     {
         // Arrange: Feb 1, 2026 is a Sunday (EDGE CASE mentioned in plan)
-        var date = new DateTime(2026, 2, 1);
+        var date = new DateOnly(2026, 2, 1);
 
         // Act
         var weekNumber = CallGetWeekNumber(date);
@@ -69,7 +69,7 @@ public class DayAssignmentServiceTests : IDisposable
     public void GetWeekNumber_MonthStartsOnTuesday_FirstDayIsWeek1()
     {
         // Arrange: July 1, 2025 is a Tuesday
-        var date = new DateTime(2025, 7, 1);
+        var date = new DateOnly(2025, 7, 1);
 
         // Act
         var weekNumber = CallGetWeekNumber(date);
@@ -83,7 +83,7 @@ public class DayAssignmentServiceTests : IDisposable
     public void GetWeekNumber_SecondMondayOfMonth_ShouldReturnWeek2()
     {
         // Arrange: Feb 9, 2026 is the second Monday (Feb 2 was first Monday)
-        var date = new DateTime(2026, 2, 9);
+        var date = new DateOnly(2026, 2, 9);
 
         // Act
         var weekNumber = CallGetWeekNumber(date);
@@ -96,7 +96,7 @@ public class DayAssignmentServiceTests : IDisposable
     public void GetWeekNumber_LastDayOfMonth_CorrectWeekNumber()
     {
         // Arrange: Feb 28, 2026 is the last day of February (Saturday)
-        var date = new DateTime(2026, 2, 28);
+        var date = new DateOnly(2026, 2, 28);
 
         // Act
         var weekNumber = CallGetWeekNumber(date);
@@ -111,7 +111,7 @@ public class DayAssignmentServiceTests : IDisposable
     public void GetWeekNumber_MiddleOfMonth_CorrectWeekNumber()
     {
         // Arrange: Feb 15, 2026 (Sunday)
-        var date = new DateTime(2026, 2, 15);
+        var date = new DateOnly(2026, 2, 15);
 
         // Act
         var weekNumber = CallGetWeekNumber(date);
@@ -160,19 +160,19 @@ public class DayAssignmentServiceTests : IDisposable
         // Feb 9-15: Week 2 (even) = Parent B
         // Feb 16-22: Week 3 (odd) = Parent A
         // Feb 23-28: Week 4 (even) = Parent B
-        
+
         // Check first week (1-8)
         assignments.Where(a => a.Date.Day >= 1 && a.Date.Day <= 8)
             .Should().AllSatisfy(a => a.Parent.Should().Be("A", $"Day {a.Date.Day} is in week 1 (odd)"));
-        
+
         // Check second week (9-15)
         assignments.Where(a => a.Date.Day >= 9 && a.Date.Day <= 15)
             .Should().AllSatisfy(a => a.Parent.Should().Be("B", $"Day {a.Date.Day} is in week 2 (even)"));
-        
+
         // Check third week (16-22)
         assignments.Where(a => a.Date.Day >= 16 && a.Date.Day <= 22)
             .Should().AllSatisfy(a => a.Parent.Should().Be("A", $"Day {a.Date.Day} is in week 3 (odd)"));
-        
+
         // Check fourth week (23-28)
         assignments.Where(a => a.Date.Day >= 23 && a.Date.Day <= 28)
             .Should().AllSatisfy(a => a.Parent.Should().Be("B", $"Day {a.Date.Day} is in week 4 (even)"));
@@ -184,9 +184,9 @@ public class DayAssignmentServiceTests : IDisposable
         // Arrange
         var year = 2026;
         var month = 2;
-        
+
         // Create an existing assignment for Feb 5 with custom values
-        var existingDate = new DateTime(2026, 2, 5, 0, 0, 0, DateTimeKind.Utc);
+        var existingDate = new DateOnly(2026, 2, 5);
         var existing = new DayAssignment
         {
             Date = existingDate,
@@ -230,7 +230,7 @@ public class DayAssignmentServiceTests : IDisposable
     public async Task UpsertDay_NewDay_ShouldCreateAssignment()
     {
         // Arrange
-        var date = new DateTime(2026, 2, 15, 0, 0, 0, DateTimeKind.Utc);
+        var date = new DateOnly(2026, 2, 15);
         var parent = "A";
         var isVAB = false;
         var specialStatus = "Normal";
@@ -240,7 +240,7 @@ public class DayAssignmentServiceTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result.Date.Date.Should().Be(date.Date);
+        result.Date.Should().Be(date);
         result.Parent.Should().Be(parent);
         result.IsVAB.Should().Be(isVAB);
         result.SpecialStatus.Should().Be(specialStatus);
@@ -248,7 +248,7 @@ public class DayAssignmentServiceTests : IDisposable
         result.ModifiedAt.Should().BeNull();
 
         // Verify it was saved to database
-        var saved = await _context.DayAssignments.FirstOrDefaultAsync(d => d.Date.Date == date.Date);
+        var saved = await _context.DayAssignments.FirstOrDefaultAsync(d => d.Date == date);
         saved.Should().NotBeNull();
         saved!.Parent.Should().Be(parent);
     }
@@ -257,8 +257,8 @@ public class DayAssignmentServiceTests : IDisposable
     public async Task UpsertDay_ExistingDay_ShouldUpdateAssignment()
     {
         // Arrange
-        var date = new DateTime(2026, 2, 15, 0, 0, 0, DateTimeKind.Utc);
-        
+        var date = new DateOnly(2026, 2, 15);
+
         // Create initial assignment
         var initial = new DayAssignment
         {
@@ -278,7 +278,7 @@ public class DayAssignmentServiceTests : IDisposable
         // Assert
         result.Should().NotBeNull();
         result.Id.Should().Be(initialId, "Should update existing record, not create new one");
-        result.Date.Date.Should().Be(date.Date);
+        result.Date.Should().Be(date);
         result.Parent.Should().Be("B", "Parent should be updated");
         result.IsVAB.Should().BeTrue("IsVAB should be updated");
         result.SpecialStatus.Should().Be("VAB Day", "SpecialStatus should be updated");
@@ -286,7 +286,7 @@ public class DayAssignmentServiceTests : IDisposable
         result.ModifiedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
 
         // Verify database has only one record
-        var count = await _context.DayAssignments.CountAsync(d => d.Date.Date == date.Date);
+        var count = await _context.DayAssignments.CountAsync(d => d.Date == date);
         count.Should().Be(1, "Should only have one record for the date");
     }
 
@@ -294,16 +294,13 @@ public class DayAssignmentServiceTests : IDisposable
     public async Task UpsertDay_UnspecifiedDateKind_ShouldConvertToUtc()
     {
         // Arrange
-        var date = new DateTime(2026, 2, 15, 12, 30, 45, DateTimeKind.Unspecified);
+        var date = new DateOnly(2026, 2, 15);
 
         // Act
         var result = await _service.UpsertDayAssignmentAsync(date, "A", false, null);
 
         // Assert
-        result.Date.Kind.Should().Be(DateTimeKind.Utc);
-        result.Date.Hour.Should().Be(0);
-        result.Date.Minute.Should().Be(0);
-        result.Date.Second.Should().Be(0);
+        result.Date.Should().Be(date);
     }
 
     #endregion
@@ -316,19 +313,19 @@ public class DayAssignmentServiceTests : IDisposable
         // Arrange
         var year = 2026;
         var month = 2;
-        
+
         // Create assignments for Feb 1-5
         for (int day = 1; day <= 5; day++)
         {
             var assignment = new DayAssignment
             {
-                Date = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc),
+                Date = new DateOnly(year, month, day),
                 Parent = day % 2 == 1 ? "A" : "B",
                 IsVAB = false,
                 SpecialStatus = null,
                 CreatedAt = DateTime.UtcNow
             };
-            
+
             // Add comment to Feb 2
             if (day == 2)
             {
@@ -342,7 +339,7 @@ public class DayAssignmentServiceTests : IDisposable
                     }
                 };
             }
-            
+
             _context.DayAssignments.Add(assignment);
         }
         await _context.SaveChangesAsync();
@@ -353,7 +350,7 @@ public class DayAssignmentServiceTests : IDisposable
         // Assert
         results.Should().HaveCount(5);
         results.Should().BeInAscendingOrder(a => a.Date);
-        
+
         var feb2 = results.First(a => a.Date.Day == 2);
         feb2.Comments.Should().HaveCount(1);
         feb2.Comments.First().CommentText.Should().Be("Test comment");
@@ -382,24 +379,24 @@ public class DayAssignmentServiceTests : IDisposable
     {
         // Arrange
         var year = 2026;
-        
+
         // Create 10 days for Parent A, 5 for Parent B
         for (int i = 1; i <= 10; i++)
         {
             _context.DayAssignments.Add(new DayAssignment
             {
-                Date = new DateTime(year, 1, i, 0, 0, 0, DateTimeKind.Utc),
+                Date = new DateOnly(year, 1, i),
                 Parent = "A",
                 IsVAB = false,
                 CreatedAt = DateTime.UtcNow
             });
         }
-        
+
         for (int i = 11; i <= 15; i++)
         {
             _context.DayAssignments.Add(new DayAssignment
             {
-                Date = new DateTime(year, 1, i, 0, 0, 0, DateTimeKind.Utc),
+                Date = new DateOnly(year, 1, i),
                 Parent = "B",
                 IsVAB = false,
                 CreatedAt = DateTime.UtcNow
@@ -421,25 +418,25 @@ public class DayAssignmentServiceTests : IDisposable
     {
         // Arrange
         var year = 2026;
-        
+
         // Create 3 VAB days
         for (int i = 1; i <= 3; i++)
         {
             _context.DayAssignments.Add(new DayAssignment
             {
-                Date = new DateTime(year, 1, i, 0, 0, 0, DateTimeKind.Utc),
+                Date = new DateOnly(year, 1, i),
                 Parent = "A",
                 IsVAB = true,
                 CreatedAt = DateTime.UtcNow
             });
         }
-        
+
         // Create 2 non-VAB days
         for (int i = 4; i <= 5; i++)
         {
             _context.DayAssignments.Add(new DayAssignment
             {
-                Date = new DateTime(year, 1, i, 0, 0, 0, DateTimeKind.Utc),
+                Date = new DateOnly(year, 1, i),
                 Parent = "B",
                 IsVAB = false,
                 CreatedAt = DateTime.UtcNow
@@ -459,11 +456,11 @@ public class DayAssignmentServiceTests : IDisposable
     {
         // Arrange
         var year = 2026;
-        
+
         // Create day with comment
         var dayWithComment = new DayAssignment
         {
-            Date = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            Date = new DateOnly(year, 1, 1),
             Parent = "A",
             IsVAB = false,
             CreatedAt = DateTime.UtcNow,
@@ -474,16 +471,16 @@ public class DayAssignmentServiceTests : IDisposable
             }
         };
         _context.DayAssignments.Add(dayWithComment);
-        
+
         // Create day without comment
         _context.DayAssignments.Add(new DayAssignment
         {
-            Date = new DateTime(year, 1, 2, 0, 0, 0, DateTimeKind.Utc),
+            Date = new DateOnly(year, 1, 2),
             Parent = "B",
             IsVAB = false,
             CreatedAt = DateTime.UtcNow
         });
-        
+
         await _context.SaveChangesAsync();
 
         // Act
@@ -498,13 +495,13 @@ public class DayAssignmentServiceTests : IDisposable
     {
         // Arrange
         var year = 2024; // Leap year
-        
+
         // Create 10 assigned days
         for (int i = 1; i <= 10; i++)
         {
             _context.DayAssignments.Add(new DayAssignment
             {
-                Date = new DateTime(year, 1, i, 0, 0, 0, DateTimeKind.Utc),
+                Date = new DateOnly(year, 1, i),
                 Parent = "A",
                 IsVAB = false,
                 CreatedAt = DateTime.UtcNow
@@ -543,16 +540,16 @@ public class DayAssignmentServiceTests : IDisposable
     /// <summary>
     /// Helper to call the private GetWeekNumber method using reflection
     /// </summary>
-    private int CallGetWeekNumber(DateTime date)
+    private int CallGetWeekNumber(DateOnly date)
     {
         var method = typeof(DayAssignmentService).GetMethod(
             "GetWeekNumber",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static
         );
-        
+
         if (method == null)
             throw new InvalidOperationException("GetWeekNumber method not found");
-        
+
         var result = method.Invoke(null, new object[] { date });
         return (int)result!;
     }

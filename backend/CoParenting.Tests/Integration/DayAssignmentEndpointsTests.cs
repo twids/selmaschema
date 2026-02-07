@@ -129,7 +129,7 @@ public class DayAssignmentEndpointsTests : IDisposable
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var assignment = await response.Content.ReadFromJsonAsync<DayAssignmentDto>();
         assignment.Should().NotBeNull();
-        assignment!.Date.Should().Be(new DateTime(2026, 2, 15, 0, 0, 0, DateTimeKind.Utc));
+        assignment!.Date.Should().Be(new DateOnly(2026, 2, 15));
         assignment.Parent.Should().Be("A");
         assignment.IsVAB.Should().BeFalse();
     }
@@ -166,7 +166,7 @@ public class DayAssignmentEndpointsTests : IDisposable
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var assignment = await response.Content.ReadFromJsonAsync<DayAssignmentDto>();
         assignment.Should().NotBeNull();
-        assignment!.Date.Should().Be(new DateTime(2026, 2, 20, 0, 0, 0, DateTimeKind.Utc));
+        assignment!.Date.Should().Be(new DateOnly(2026, 2, 20));
         assignment.Parent.Should().Be("B");
         assignment.IsVAB.Should().BeFalse();
         assignment.SpecialStatus.Should().Be("Holiday");

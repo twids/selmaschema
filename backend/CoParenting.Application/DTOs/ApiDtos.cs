@@ -11,7 +11,7 @@ public record CommentDto(
 
 public record DayAssignmentDto(
     int Id,
-    DateTime Date,
+    DateOnly Date,
     string? Parent,
     bool IsVAB,
     string? SpecialStatus,
@@ -20,7 +20,7 @@ public record DayAssignmentDto(
 );
 
 public record CreateDayAssignmentDto(
-    DateTime Date,
+    DateOnly Date,
     string? Parent,
     bool IsVAB,
     string? SpecialStatus
@@ -115,7 +115,7 @@ public record ChangeRequestDto
     public int Id { get; init; }
     public int RequestedByUserId { get; init; }
     public string RequestedByName { get; init; } = string.Empty;
-    public DateTime RequestedForDate { get; init; }
+    public DateOnly RequestedForDate { get; init; }
     public string CurrentParent { get; init; } = string.Empty;
     public string RequestedParent { get; init; } = string.Empty;
     public string Status { get; init; } = string.Empty;
@@ -127,7 +127,7 @@ public record ChangeRequestDto
 
 public record CreateChangeRequestDto
 {
-    public List<DateTime> Dates { get; init; } = new();
+    public List<DateOnly> Dates { get; init; } = new();
     public string RequestedParent { get; init; } = string.Empty;
     public string? Comment { get; init; }
 }

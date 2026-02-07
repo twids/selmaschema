@@ -164,7 +164,7 @@ public class AuthEndpointsTests : IDisposable
         // Arrange - Create expired token directly in database
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
-        
+
         var user = new User
         {
             Email = "expired@test.com",

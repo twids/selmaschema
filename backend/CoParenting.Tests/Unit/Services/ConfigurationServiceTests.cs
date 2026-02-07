@@ -122,7 +122,7 @@ public class ConfigurationServiceTests : IDisposable
         var key = "ExistingKey";
         var originalValue = "OriginalValue";
         var newValue = "NewValue";
-        
+
         _context.Configurations.Add(new Configuration
         {
             Key = key,
@@ -148,7 +148,7 @@ public class ConfigurationServiceTests : IDisposable
         // Arrange
         var key = "TestKey";
         var originalCreatedAt = DateTime.UtcNow.AddDays(-7);
-        
+
         _context.Configurations.Add(new Configuration
         {
             Key = key,
@@ -257,7 +257,7 @@ public class ConfigurationServiceTests : IDisposable
         // Assert
         var parentAValue = await _service.GetValueAsync("ParentAName");
         var parentBValue = await _service.GetValueAsync("ParentBName");
-        
+
         parentAValue.Should().Be(newParentAName);
         parentBValue.Should().Be(newParentBName);
     }
@@ -291,7 +291,7 @@ public class ConfigurationServiceTests : IDisposable
 
         parentAConfig.Should().NotBeNull();
         parentAConfig!.Value.Should().Be("Grace");
-        
+
         parentBConfig.Should().NotBeNull();
         parentBConfig!.Value.Should().Be("Henry");
     }

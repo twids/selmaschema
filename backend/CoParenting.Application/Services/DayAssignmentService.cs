@@ -22,9 +22,6 @@ public class DayAssignmentService : IDayAssignmentService
     /// </summary>
     public async Task<List<DayAssignment>> GetMonthAssignmentsAsync(int year, int month)
     {
-        var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
-        var endDate = startDate.AddMonths(1).AddDays(-1);
-
         return await _context.DayAssignments
             .Include(d => d.Comments)
             .Where(d => d.Date.Year == year && d.Date.Month == month)
@@ -35,18 +32,17 @@ public class DayAssignmentService : IDayAssignmentService
     /// <summary>
     /// Gets a specific day assignment
     /// </summary>
-    public async Task<DayAssignment?> GetDayAssignmentAsync(DateTime date)
+    public async Task<DayAssignment?> GetDayAssignmentAsync(DateOnly date)
     {
-        var utcDate = date.Kind == DateTimeKind.Unspecified ? new DateTime(date.Ticks, DateTimeKind.Utc) : date.ToUniversalTime();
         return await _context.DayAssignments
             .Include(d => d.Comments)
-            .FirstOrDefaultAsync(d => d.Date.Date == utcDate.Date);
+            .FirstOrDefaultAsync(d => d.Date == date);
     }
 
     /// <summary>
     /// Creates or updates a day assignment
     /// </summary>
-    public async Task<DayAssignment> UpsertDayAssignmentAsync(DateTime date, string? parent, bool isVAB, string? specialStatus)
+    public async Task<DayAssignment> UpsertDayAssignmentAsync(DateOnly date, string? parent, bool isVAB, string? specialStatus)
     {
         var existing = await GetDayAssignmentAsync(date);
 
@@ -60,10 +56,9 @@ public class DayAssignmentService : IDayAssignmentService
             return existing;
         }
 
-        var utcDate = date.Kind == DateTimeKind.Unspecified ? new DateTime(date.Ticks, DateTimeKind.Utc) : date.ToUniversalTime();
         var newAssignment = new DayAssignment
         {
-            Date = new DateTime(utcDate.Year, utcDate.Month, utcDate.Day, 0, 0, 0, DateTimeKind.Utc),
+            Date = date,
             Parent = parent,
             IsVAB = isVAB,
             SpecialStatus = specialStatus,
@@ -81,20 +76,19 @@ public class DayAssignmentService : IDayAssignmentService
     /// </summary>
     public async Task<List<DayAssignment>> InitializeMonthWithDefaultsAsync(int year, int month)
     {
-        var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         var daysInMonth = DateTime.DaysInMonth(year, month);
 
         // Fetch all existing assignments for the month in a single query
         var existingAssignments = await _context.DayAssignments
             .Include(d => d.Comments)
             .Where(d => d.Date.Year == year && d.Date.Month == month)
-            .ToDictionaryAsync(d => d.Date.Date, d => d);
+            .ToDictionaryAsync(d => d.Date, d => d);
 
         var assignments = new List<DayAssignment>();
 
         for (int day = 1; day <= daysInMonth; day++)
         {
-            var date = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+            var date = new DateOnly(year, month, day);
 
             // Skip if already assigned
             if (existingAssignments.TryGetValue(date, out var existing))
@@ -111,7 +105,7 @@ public class DayAssignmentService : IDayAssignmentService
 
             var assignment = new DayAssignment
             {
-                Date = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc),
+                Date = date,
                 Parent = parent,
                 IsVAB = false,
                 SpecialStatus = null,
@@ -130,15 +124,15 @@ public class DayAssignmentService : IDayAssignmentService
     /// Gets week number where weeks start on Monday (exchange day)
     /// Week 1 = from first Monday of month onwards (or from day 1 if month starts on Mon-Sun before first Mon)
     /// </summary>
-    private static int GetWeekNumber(DateTime date)
+    private static int GetWeekNumber(DateOnly date)
     {
         // Get the first day of the month
-        var firstDay = new DateTime(date.Year, date.Month, 1);
+        var firstDay = new DateOnly(date.Year, date.Month, 1);
         // Get the Monday of the week containing the first day (may be in previous month)
         // DayOfWeek: Sunday=0, Monday=1, ..., Saturday=6
         var firstMonday = firstDay.AddDays(1 - (int)firstDay.DayOfWeek);
         // Count weeks from first Monday to current date
-        var weekNumber = (int)((date - firstMonday).TotalDays / 7) + 1;
+        var weekNumber = (date.DayNumber - firstMonday.DayNumber) / 7 + 1;
         return weekNumber;
     }
 

@@ -31,10 +31,11 @@ public class CoParentingDbContext : DbContext
             entity.ToTable("DayAssignments");
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Date).IsUnique();
+            entity.Property(e => e.Date).HasColumnType("date");
             entity.Property(e => e.Parent).HasMaxLength(1);
             entity.Property(e => e.SpecialStatus).HasMaxLength(50);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            
+
             // Relationship to Comments
             entity.HasMany(e => e.Comments)
                 .WithOne(c => c.DayAssignment)
@@ -67,19 +68,19 @@ public class CoParentingDbContext : DbContext
 
         // Seed default configuration
         modelBuilder.Entity<Configuration>().HasData(
-            new Configuration 
-            { 
-                Id = 1, 
-                Key = "ParentAName", 
-                Value = "Tomas", 
-                CreatedAt = DateTime.UtcNow 
+            new Configuration
+            {
+                Id = 1,
+                Key = "ParentAName",
+                Value = "Tomas",
+                CreatedAt = DateTime.UtcNow
             },
-            new Configuration 
-            { 
-                Id = 2, 
-                Key = "ParentBName", 
-                Value = "Carro", 
-                CreatedAt = DateTime.UtcNow 
+            new Configuration
+            {
+                Id = 2,
+                Key = "ParentBName",
+                Value = "Carro",
+                CreatedAt = DateTime.UtcNow
             }
         );
 
@@ -110,7 +111,7 @@ public class CoParentingDbContext : DbContext
             entity.Property(e => e.IsActive).HasColumnName("isactive").HasDefaultValue(true);
             entity.HasIndex(e => e.Token).IsUnique();
             entity.HasIndex(e => e.UserId);
-            
+
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
@@ -130,7 +131,7 @@ public class CoParentingDbContext : DbContext
             entity.Property(e => e.IsUsed).HasColumnName("isused").HasDefaultValue(false);
             entity.Property(e => e.UsedAt).HasColumnName("usedat");
             entity.HasIndex(e => e.Token).IsUnique();
-            
+
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
@@ -154,12 +155,12 @@ public class CoParentingDbContext : DbContext
             entity.Property(e => e.Comment).HasColumnName("comment").HasMaxLength(1000);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.RequestedForDate);
-            
+
             entity.HasOne(e => e.RequestedByUser)
                 .WithMany()
                 .HasForeignKey(e => e.RequestedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
-                
+
             entity.HasOne(e => e.ReviewedByUser)
                 .WithMany()
                 .HasForeignKey(e => e.ReviewedByUserId)

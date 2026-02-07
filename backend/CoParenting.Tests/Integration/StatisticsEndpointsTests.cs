@@ -330,7 +330,7 @@ public class StatisticsEndpointsTests : IDisposable
 
     private async Task<DayAssignmentDto> CreateDayAsync(string dateStr, string? parent, bool isVAB)
     {
-        var response = await _client.PutAsJsonAsync($"/api/days/{dateStr}", 
+        var response = await _client.PutAsJsonAsync($"/api/days/{dateStr}",
             new UpdateDayAssignmentDto(parent, isVAB, null));
         var day = await response.Content.ReadFromJsonAsync<DayAssignmentDto>();
         return day!;

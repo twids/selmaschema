@@ -6,14 +6,14 @@ namespace CoParenting.Core.Entities;
 public class DayAssignment
 {
     public int Id { get; set; }
-    
-    public DateTime Date { get; set; }
-    
+
+    public DateOnly Date { get; set; }
+
     /// <summary>
     /// Which parent has the child: 'A', 'B', or null for unassigned
     /// </summary>
     public string? Parent { get; set; }
-    
+
     /// <summary>
     /// Whether this is a VAB (Vård av Barn - child care leave) day
     /// </summary>
@@ -25,9 +25,9 @@ public class DayAssignment
     public string? SpecialStatus { get; set; }
 
     public DateTime CreatedAt { get; set; }
-    
+
     public DateTime? ModifiedAt { get; set; }
-    
+
     // Navigation property
     public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 }

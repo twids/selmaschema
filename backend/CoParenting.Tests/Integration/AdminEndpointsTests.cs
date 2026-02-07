@@ -202,7 +202,7 @@ public class AdminEndpointsTests : IDisposable
             "parenta@test.com",
             "ParentA",
             "Parent A");
-        
+
         // Exchange magic token for session
         var request = new MagicTokenRequest { Token = magicToken!.Token };
         var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
