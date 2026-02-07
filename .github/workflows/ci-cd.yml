@@ -39,6 +39,11 @@ jobs:
         cd frontend
         npm run lint || echo "Linting completed with warnings"
         
+    - name: Run frontend tests
+      run: |
+        cd frontend
+        npm test -- run
+        
     - name: Build frontend
       run: |
         cd frontend
