@@ -19,7 +19,8 @@ import {
 import { useCalendar } from '../context/CalendarContext';
 import { useConfig } from '../context/ConfigContext';
 import { sv, formatSwedishDate } from '../i18n/sv';
-import type { UpdateDayAssignmentDto } from '../api/types';
+import type { CommentDto, UpdateDayAssignmentDto } from '../api/types';
+import CommentSection from './CommentSection';
 
 interface DayModalProps {
   open: boolean;
@@ -44,6 +45,8 @@ export default function DayModal({ open, dateKey, onClose }: DayModalProps) {
   const [specialStatus, setSpecialStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [localParentAComments, setLocalParentAComments] = useState<CommentDto[]>([]);
+  const [localParentBComments, setLocalParentBComments] = useState<CommentDto[]>([]);
 
   // Sync local state when the modal opens or dateKey changes
   useEffect(() => {
@@ -53,6 +56,8 @@ export default function DayModal({ open, dateKey, onClose }: DayModalProps) {
       setSpecialStatus(existing?.specialStatus ?? null);
       setError(null);
       setSaving(false);
+      setLocalParentAComments(existing?.parentAComments ?? []);
+      setLocalParentBComments(existing?.parentBComments ?? []);
     }
   }, [open, dateKey, existing]);
 
@@ -92,7 +97,7 @@ export default function DayModal({ open, dateKey, onClose }: DayModalProps) {
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="xs"
+      maxWidth="md"
       fullWidth
       data-testid="day-modal"
     >
@@ -149,6 +154,35 @@ export default function DayModal({ open, dateKey, onClose }: DayModalProps) {
 
           {/* Error */}
           {error && <Alert severity="error">{error}</Alert>}
+
+          {/* Comment sections */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+              gap: 2,
+              mt: 2,
+            }}
+          >
+            <CommentSection
+              parent="A"
+              parentName={parentNames.parentAName}
+              comments={localParentAComments}
+              dayAssignmentId={existing?.id}
+              onCommentAdded={(c) =>
+                setLocalParentAComments((prev) => [...prev, c])
+              }
+            />
+            <CommentSection
+              parent="B"
+              parentName={parentNames.parentBName}
+              comments={localParentBComments}
+              dayAssignmentId={existing?.id}
+              onCommentAdded={(c) =>
+                setLocalParentBComments((prev) => [...prev, c])
+              }
+            />
+          </Box>
         </Box>
       </DialogContent>
 
