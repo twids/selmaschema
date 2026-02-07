@@ -4,6 +4,7 @@ import { CalendarProvider } from '../context/CalendarContext';
 import { ConfigProvider } from '../context/ConfigContext';
 import CalendarGrid from './CalendarGrid';
 import MonthControls from './MonthControls';
+import ImportExport from './ImportExport';
 import Legend from './Legend';
 import DayModal from './DayModal';
 import Statistics from './Statistics';
@@ -29,6 +30,7 @@ function CalendarPageContent() {
         Kalender
       </Typography>
       <MonthControls />
+      <ImportExport />
       <Legend />
       <CalendarGrid onDayClick={handleDayClick} />
       <DayModal
