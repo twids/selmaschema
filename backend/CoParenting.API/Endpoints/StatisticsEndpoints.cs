@@ -1,5 +1,5 @@
-using CoParenting.API.DTOs;
-using CoParenting.API.Services;
+using CoParenting.Application.DTOs;
+using CoParenting.Application.Interfaces;
 
 namespace CoParenting.API.Endpoints;
 
@@ -12,7 +12,7 @@ public static class StatisticsEndpoints
             .RequireAuthorization();
 
         // GET /api/statistics/{year}
-        group.MapGet("/{year}", async (int year, DayAssignmentService service) =>
+        group.MapGet("/{year}", async (int year, IDayAssignmentService service) =>
         {
             var (parentA, parentB, vab, unassigned, withComments) = await service.GetYearStatisticsAsync(year);
             return Results.Ok(new StatisticsDto(parentA, parentB, vab, unassigned, withComments));

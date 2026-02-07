@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CoParenting.Infrastructure\CoParenting.Infrastructure.csproj" />
+    <ProjectReference Include="..\CoParenting.Application\CoParenting.Application.csproj" />
   </ItemGroup>
 
 </Project>

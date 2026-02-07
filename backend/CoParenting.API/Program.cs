@@ -1,6 +1,7 @@
 using CoParenting.API.Authentication;
 using CoParenting.API.Endpoints;
-using CoParenting.API.Services;
+using CoParenting.Application.Interfaces;
+using CoParenting.Application.Services;
 using CoParenting.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -19,9 +20,9 @@ builder.Services.AddDbContext<CoParentingDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add application services
-builder.Services.AddScoped<DayAssignmentService>();
-builder.Services.AddScoped<ConfigurationService>();
-builder.Services.AddScoped<CommentService>();
+builder.Services.AddScoped<IDayAssignmentService, DayAssignmentService>();
+builder.Services.AddScoped<IConfigurationService, ConfigurationService>();
+builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Add authentication and authorization

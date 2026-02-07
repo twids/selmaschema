@@ -1,13 +1,14 @@
+using CoParenting.Application.Interfaces;
 using CoParenting.Core.Entities;
 using CoParenting.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoParenting.API.Services;
+namespace CoParenting.Application.Services;
 
 /// <summary>
 /// Service for managing day assignments with business logic
 /// </summary>
-public class DayAssignmentService
+public class DayAssignmentService : IDayAssignmentService
 {
     private readonly CoParentingDbContext _context;
 

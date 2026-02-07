@@ -1,5 +1,5 @@
-using CoParenting.API.DTOs;
-using CoParenting.API.Services;
+using CoParenting.Application.DTOs;
+using CoParenting.Application.Interfaces;
 
 namespace CoParenting.API.Endpoints;
 
@@ -12,7 +12,7 @@ public static class CommentEndpoints
             .RequireAuthorization();
 
         // POST /api/comments/{dayAssignmentId}
-        group.MapPost("/{dayAssignmentId}", async (int dayAssignmentId, CreateCommentDto dto, CommentService service) =>
+        group.MapPost("/{dayAssignmentId}", async (int dayAssignmentId, CreateCommentDto dto, ICommentService service) =>
         {
             var comment = await service.AddCommentAsync(dayAssignmentId, dto.Parent, dto.CommentText);
             return Results.Ok(new CommentDto(
@@ -29,7 +29,7 @@ public static class CommentEndpoints
         .Produces<CommentDto>();
 
         // GET /api/comments/{dayAssignmentId}
-        group.MapGet("/{dayAssignmentId}", async (int dayAssignmentId, CommentService service) =>
+        group.MapGet("/{dayAssignmentId}", async (int dayAssignmentId, ICommentService service) =>
         {
             var comments = await service.GetCommentsForDayAsync(dayAssignmentId);
             var dtos = comments.Select(c => new CommentDto(
@@ -47,7 +47,7 @@ public static class CommentEndpoints
         .Produces<List<CommentDto>>();
 
         // PUT /api/comments/{commentId}
-        group.MapPut("/{commentId}", async (int commentId, UpdateCommentDto dto, CommentService service) =>
+        group.MapPut("/{commentId}", async (int commentId, UpdateCommentDto dto, ICommentService service) =>
         {
             var comment = await service.UpdateCommentAsync(commentId, dto.CommentText);
             if (comment == null)
@@ -68,7 +68,7 @@ public static class CommentEndpoints
         .Produces(StatusCodes.Status404NotFound);
 
         // DELETE /api/comments/{commentId}
-        group.MapDelete("/{commentId}", async (int commentId, CommentService service) =>
+        group.MapDelete("/{commentId}", async (int commentId, ICommentService service) =>
         {
             var deleted = await service.DeleteCommentAsync(commentId);
             return deleted ? Results.NoContent() : Results.NotFound();

@@ -1,5 +1,5 @@
-using CoParenting.API.Services;
-using CoParenting.API.DTOs;
+using CoParenting.Application.DTOs;
+using CoParenting.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CoParenting.API.Endpoints;
@@ -16,7 +16,7 @@ public static class AuthEndpoints
             IAuthService authService) =>
         {
             var (success, session, user) = await authService.ValidateAdminPasswordAsync(request.Password);
-            
+
             if (!success || session == null || user == null)
             {
                 return Results.Unauthorized();
@@ -42,7 +42,7 @@ public static class AuthEndpoints
             IAuthService authService) =>
         {
             var (success, session, user, error) = await authService.ExchangeMagicTokenAsync(request.Token);
-            
+
             if (!success || session == null || user == null)
             {
                 return Results.BadRequest(new { error = error ?? "Invalid or expired token" });
@@ -68,14 +68,14 @@ public static class AuthEndpoints
             IAuthService authService) =>
         {
             var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-            
+
             if (string.IsNullOrEmpty(token))
             {
                 return Results.Unauthorized();
             }
 
             var (success, user) = await authService.ValidateSessionAsync(token);
-            
+
             if (!success || user == null)
             {
                 return Results.Unauthorized();
@@ -96,15 +96,15 @@ public static class AuthEndpoints
             IAuthService authService) =>
         {
             var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-            
+
             if (string.IsNullOrEmpty(token))
             {
                 return Results.BadRequest(new { error = "No token provided" });
             }
 
             var success = await authService.InvalidateSessionAsync(token);
-            
-            return success 
+
+            return success
                 ? Results.Ok(new { message = "Logged out successfully" })
                 : Results.BadRequest(new { error = "Invalid session" });
         }).RequireAuthorization();
@@ -128,7 +128,7 @@ public static class AdminEndpoints
             // Verify admin role
             var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
             var (success, user) = await authService.ValidateSessionAsync(token);
-            
+
             if (!success || user?.Role != "Admin")
             {
                 return Results.Forbid();
@@ -165,7 +165,7 @@ public static class AdminEndpoints
         {
             var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
             var (success, user) = await authService.ValidateSessionAsync(token);
-            
+
             if (!success || user?.Role != "Admin")
             {
                 return Results.Forbid();
@@ -189,7 +189,7 @@ public static class AdminEndpoints
         {
             var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
             var (success, user) = await authService.ValidateSessionAsync(token);
-            
+
             if (!success || user?.Role != "Admin")
             {
                 return Results.Forbid();
@@ -197,7 +197,7 @@ public static class AdminEndpoints
 
             var magicLinks = await authService.GetPendingMagicLinksAsync();
             var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
-            
+
             return Results.Ok(magicLinks.Select(mt => new MagicLinkResponse
             {
                 Token = mt.Token,

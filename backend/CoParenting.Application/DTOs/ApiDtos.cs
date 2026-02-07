@@ -1,4 +1,4 @@
-namespace CoParenting.API.DTOs;
+namespace CoParenting.Application.DTOs;
 
 public record CommentDto(
     int Id,

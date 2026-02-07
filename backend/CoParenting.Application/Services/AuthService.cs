@@ -1,20 +1,12 @@
+using CoParenting.Application.Interfaces;
 using CoParenting.Core.Entities;
 using CoParenting.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 
-namespace CoParenting.API.Services;
-
-public interface IAuthService
-{
-    Task<(bool Success, Session? Session, User? User)> ValidateAdminPasswordAsync(string password);
-    Task<(bool Success, MagicLinkToken? Token)> CreateMagicLinkAsync(string email, string role, string displayName);
-    Task<(bool Success, Session? Session, User? User, string? Error)> ExchangeMagicTokenAsync(string token);
-    Task<(bool Success, User? User)> ValidateSessionAsync(string sessionToken);
-    Task<bool> InvalidateSessionAsync(string sessionToken);
-    Task<List<MagicLinkToken>> GetPendingMagicLinksAsync();
-    Task<List<User>> GetAllUsersAsync();
-}
+namespace CoParenting.Application.Services;
 
 public class AuthService : IAuthService
 {
@@ -35,7 +27,7 @@ public class AuthService : IAuthService
     public async Task<(bool Success, Session? Session, User? User)> ValidateAdminPasswordAsync(string password)
     {
         var adminPasswordHash = _configuration["Auth:AdminPasswordHash"];
-        
+
         if (string.IsNullOrEmpty(adminPasswordHash))
         {
             _logger.LogError("Admin password hash not configured");
@@ -51,7 +43,7 @@ public class AuthService : IAuthService
         catch (Exception ex)
         {
             _logger.LogError(ex, "BCrypt verification failed, hash: {Hash}", adminPasswordHash);
-            
+
             // Fallback for development: check if password matches plain text (insecure, dev only!)
             if (adminPasswordHash == password)
             {
@@ -63,7 +55,7 @@ public class AuthService : IAuthService
                 return (false, null, null);
             }
         }
-        
+
         if (!isValid)
         {
             _logger.LogWarning("Failed admin login attempt");
@@ -109,8 +101,8 @@ public class AuthService : IAuthService
     }
 
     public async Task<(bool Success, MagicLinkToken? Token)> CreateMagicLinkAsync(
-        string email, 
-        string role, 
+        string email,
+        string role,
         string displayName)
     {
         if (role != "ParentA" && role != "ParentB")
@@ -121,7 +113,7 @@ public class AuthService : IAuthService
 
         // Find or create user
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-        
+
         if (user == null)
         {
             user = new User

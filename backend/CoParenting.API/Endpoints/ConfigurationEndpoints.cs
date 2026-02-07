@@ -1,5 +1,5 @@
-using CoParenting.API.DTOs;
-using CoParenting.API.Services;
+using CoParenting.Application.DTOs;
+using CoParenting.Application.Interfaces;
 
 namespace CoParenting.API.Endpoints;
 
@@ -12,7 +12,7 @@ public static class ConfigurationEndpoints
             .RequireAuthorization();
 
         // GET /api/config/parent-names
-        group.MapGet("/parent-names", async (ConfigurationService service) =>
+        group.MapGet("/parent-names", async (IConfigurationService service) =>
         {
             var (parentAName, parentBName) = await service.GetParentNamesAsync();
             return Results.Ok(new ParentNamesDto(parentAName, parentBName));
@@ -22,7 +22,7 @@ public static class ConfigurationEndpoints
         .Produces<ParentNamesDto>();
 
         // PUT /api/config/parent-names
-        group.MapPut("/parent-names", async (ParentNamesDto dto, ConfigurationService service) =>
+        group.MapPut("/parent-names", async (ParentNamesDto dto, IConfigurationService service) =>
         {
             await service.SetParentNamesAsync(dto.ParentAName, dto.ParentBName);
             return Results.Ok(dto);

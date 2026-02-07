@@ -1,5 +1,5 @@
-using CoParenting.API.DTOs;
-using CoParenting.API.Services;
+using CoParenting.Application.DTOs;
+using CoParenting.Application.Interfaces;
 using CoParenting.Core.Entities;
 
 namespace CoParenting.API.Endpoints;
@@ -13,7 +13,7 @@ public static class DayAssignmentEndpoints
             .RequireAuthorization();
 
         // GET /api/days/{year}/{month}
-        group.MapGet("/{year}/{month}", async (int year, int month, DayAssignmentService service) =>
+        group.MapGet("/{year}/{month}", async (int year, int month, IDayAssignmentService service) =>
         {
             var assignments = await service.GetMonthAssignmentsAsync(year, month);
             var dtos = assignments.Select(MapToDto).ToList();
@@ -24,7 +24,7 @@ public static class DayAssignmentEndpoints
         .Produces<MonthDataDto>();
 
         // GET /api/days/{year}/{month}/{day}
-        group.MapGet("/{year}/{month}/{day}", async (int year, int month, int day, DayAssignmentService service) =>
+        group.MapGet("/{year}/{month}/{day}", async (int year, int month, int day, IDayAssignmentService service) =>
         {
             var date = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
             var assignment = await service.GetDayAssignmentAsync(date);
@@ -40,7 +40,7 @@ public static class DayAssignmentEndpoints
         .Produces(StatusCodes.Status404NotFound);
 
         // PUT /api/days/{year}/{month}/{day}
-        group.MapPut("/{year}/{month}/{day}", async (int year, int month, int day, UpdateDayAssignmentDto dto, DayAssignmentService service) =>
+        group.MapPut("/{year}/{month}/{day}", async (int year, int month, int day, UpdateDayAssignmentDto dto, IDayAssignmentService service) =>
         {
             var date = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
             var assignment = await service.UpsertDayAssignmentAsync(date, dto.Parent, dto.IsVAB, dto.SpecialStatus);
@@ -51,7 +51,7 @@ public static class DayAssignmentEndpoints
         .Produces<DayAssignmentDto>();
 
         // POST /api/days/{year}/{month}/initialize
-        group.MapPost("/{year}/{month}/initialize", async (int year, int month, DayAssignmentService service) =>
+        group.MapPost("/{year}/{month}/initialize", async (int year, int month, IDayAssignmentService service) =>
         {
             var assignments = await service.InitializeMonthWithDefaultsAsync(year, month);
             var dtos = assignments.Select(MapToDto).ToList();

@@ -1,13 +1,14 @@
+using CoParenting.Application.Interfaces;
 using CoParenting.Core.Entities;
 using CoParenting.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
-namespace CoParenting.API.Services;
+namespace CoParenting.Application.Services;
 
 /// <summary>
 /// Service for managing comments on day assignments
 /// </summary>
-public class CommentService
+public class CommentService : ICommentService
 {
     private readonly CoParentingDbContext _context;
 
