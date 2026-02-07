@@ -1,7 +1,19 @@
+export interface Comment {
+  id: number;
+  dayAssignmentId: number;
+  parent: string;
+  commentText: string;
+  createdAt: string;
+  modifiedAt: string | null;
+}
+
 export interface DayData {
+  id?: number;
   parent: 'parentA' | 'parentB' | '';
   isVAB: boolean;
-  comment: string;
+  specialStatus: string | null;
+  parentAComments: Comment[];
+  parentBComments: Comment[];
 }
 
 export interface CalendarData {

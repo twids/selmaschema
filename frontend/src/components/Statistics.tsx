@@ -28,7 +28,7 @@ export default function Statistics({
       if (day.parent === 'parentA') parentADays++;
       if (day.parent === 'parentB') parentBDays++;
       if (day.isVAB) vabDays++;
-      if (day.comment) commentedDays++;
+      if (day.parentAComments?.length > 0 || day.parentBComments?.length > 0) commentedDays++;
     });
 
     unassignedDays = totalDays - parentADays - parentBDays;

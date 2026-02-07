@@ -44,6 +44,34 @@
   background: #218838;
 }
 
+.calendar-grid-with-weeks {
+  display: grid;
+  grid-template-columns: 40px repeat(7, 1fr);
+  gap: 10px;
+}
+
+.week-header {
+  text-align: center;
+  font-weight: 700;
+  padding: 10px;
+  background: #e9ecef;
+  border-radius: 6px;
+  color: #495057;
+  font-size: 0.9em;
+}
+
+.week-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85em;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 5px;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -60,6 +88,16 @@
 }
 
 @media (max-width: 768px) {
+  .calendar-grid-with-weeks {
+    grid-template-columns: 30px repeat(7, 1fr);
+    gap: 5px;
+  }
+
+  .week-number {
+    font-size: 0.75em;
+    padding: 3px;
+  }
+
   .calendar-grid {
     grid-template-columns: repeat(7, 1fr);
     gap: 5px;
