@@ -1,221 +1,170 @@
 import { useState, useEffect } from 'react';
-import { DayData, ParentNames } from '../types';
-import { sv, formatSwedishDate, formatSwedishTime } from '../i18n/sv';
-import './DayModal.css';
-import './DayModal.new.css';
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  InputLabel,
+  MenuItem,
+  Select,
+  type SelectChangeEvent,
+} from '@mui/material';
+import { useCalendar } from '../context/CalendarContext';
+import { useConfig } from '../context/ConfigContext';
+import { sv, formatSwedishDate } from '../i18n/sv';
+import type { UpdateDayAssignmentDto } from '../api/types';
 
 interface DayModalProps {
-  dateKey: string;
-  currentYear: number;
-  dayData?: DayData;
-  parentNames: ParentNames;
-  onSave: (dayData: DayData) => void;
-  onAddComment: (parent: 'parentA' | 'parentB', commentText: string) => void;
+  open: boolean;
+  dateKey: string | null;
   onClose: () => void;
 }
 
-export default function DayModal({
-  dateKey,
-  dayData,
-  parentNames,
-  onSave,
-  onAddComment,
-  onClose,
-}: DayModalProps) {
-  const [parent, setParent] = useState<'' | 'parentA' | 'parentB'>(
-    dayData?.parent || ''
-  );
-  const [isVAB, setIsVAB] = useState(dayData?.isVAB || false);
-  const [specialStatus, setSpecialStatus] = useState<string | null>(
-    dayData?.specialStatus || null
-  );
+/** Parse a YYYY-MM-DD key into { year, month, day }. */
+function parseDateKey(key: string) {
+  const [year, month, day] = key.split('-').map(Number);
+  return { year, month, day };
+}
 
-  const [parentACommentText, setParentACommentText] = useState('');
-  const [parentBCommentText, setParentBCommentText] = useState('');
+export default function DayModal({ open, dateKey, onClose }: DayModalProps) {
+  const { calendarData, updateDay } = useCalendar();
+  const { parentNames } = useConfig();
 
+  const existing = dateKey ? calendarData[dateKey] : undefined;
+
+  const [parent, setParent] = useState<string | null>(null);
+  const [isVAB, setIsVAB] = useState(false);
+  const [specialStatus, setSpecialStatus] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Sync local state when the modal opens or dateKey changes
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, []);
-
-  const handleSave = () => {
-    onSave({
-      id: dayData?.id,
-      parent,
-      isVAB,
-      specialStatus,
-      parentAComments: dayData?.parentAComments || [],
-      parentBComments: dayData?.parentBComments || [],
-    });
-  };
-
-  const handleAddParentAComment = () => {
-    if (parentACommentText.trim()) {
-      onAddComment('parentA', parentACommentText);
-      setParentACommentText('');
+    if (open) {
+      setParent(existing?.parent ?? null);
+      setIsVAB(existing?.isVAB ?? false);
+      setSpecialStatus(existing?.specialStatus ?? null);
+      setError(null);
+      setSaving(false);
     }
+  }, [open, dateKey, existing]);
+
+  const handleParentChange = (e: SelectChangeEvent<string>) => {
+    const val = e.target.value;
+    setParent(val === '' ? null : val);
   };
 
-  const handleAddParentBComment = () => {
-    if (parentBCommentText.trim()) {
-      onAddComment('parentB', parentBCommentText);
-      setParentBCommentText('');
-    }
+  const handleSpecialStatusChange = (e: SelectChangeEvent<string>) => {
+    const val = e.target.value;
+    setSpecialStatus(val === '' ? null : val);
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
+  const handleSave = async () => {
+    if (!dateKey) return;
+    setSaving(true);
+    setError(null);
+
+    const { year, month, day } = parseDateKey(dateKey);
+    const data: UpdateDayAssignmentDto = { parent, isVAB, specialStatus };
+
+    try {
+      await updateDay(year, month, day, data);
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
     }
   };
+
+  const formattedDate = dateKey
+    ? formatSwedishDate(new Date(dateKey + 'T00:00:00'))
+    : '';
 
   return (
-    <div className="modal-backdrop" onClick={handleBackdropClick}>
-      <div className="modal-content modal-content-wide">
-        <h3>{formatSwedishDate(new Date(dateKey + 'T00:00:00'))}</h3>
-        <div className="modal-body">
-          {/* Assignment Controls */}
-          <div className="assignment-controls">
-            <div className="form-group">
-              <label htmlFor="parentSelect">{sv.dayModal.assignedTo}</label>
-              <select
-                id="parentSelect"
-                value={parent}
-                onChange={(e) =>
-                  setParent(e.target.value as '' | 'parentA' | 'parentB')
-                }
-              >
-                <option value="">{sv.dayModal.unassigned}</option>
-                <option value="parentA">{parentNames.parentA}</option>
-                <option value="parentB">{parentNames.parentB}</option>
-              </select>
-            </div>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      data-testid="day-modal"
+    >
+      <DialogTitle>{formattedDate}</DialogTitle>
 
-            <div className="form-group checkbox-group">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={isVAB}
-                  onChange={(e) => setIsVAB(e.target.checked)}
-                />
-                {sv.dayModal.markAsVAB}
-              </label>
-            </div>
+      <DialogContent>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+          {/* Parent assignment */}
+          <FormControl fullWidth size="small">
+            <InputLabel id="parent-select-label">
+              {sv.dayModal.assignedTo}
+            </InputLabel>
+            <Select
+              labelId="parent-select-label"
+              label={sv.dayModal.assignedTo}
+              value={parent ?? ''}
+              onChange={handleParentChange}
+            >
+              <MenuItem value="">{sv.dayModal.unassigned}</MenuItem>
+              <MenuItem value="A">{parentNames.parentAName}</MenuItem>
+              <MenuItem value="B">{parentNames.parentBName}</MenuItem>
+            </Select>
+          </FormControl>
 
-            <div className="form-group">
-              <label htmlFor="specialStatusSelect">
-                {sv.dayModal.specialStatus}
-              </label>
-              <select
-                id="specialStatusSelect"
-                value={specialStatus || ''}
-                onChange={(e) =>
-                  setSpecialStatus(e.target.value || null)
-                }
-              >
-                <option value="">{sv.specialStatus.normal}</option>
-                <option value="PreschoolClosed">
-                  {sv.specialStatus.preschoolClosed}
-                </option>
-                <option value="Holiday">{sv.specialStatus.holiday}</option>
-              </select>
-            </div>
-          </div>
+          {/* VAB checkbox */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isVAB}
+                onChange={(_, checked) => setIsVAB(checked)}
+              />
+            }
+            label={sv.dayModal.markAsVAB}
+          />
 
-          {/* Comments Sections */}
-          <div className="comments-container">
-            {/* Tomas Comments */}
-            <div className="comments-section comments-section-a">
-              <h4>{sv.comments.commentTomas}</h4>
-              <div className="comments-list">
-                {dayData?.parentAComments.length === 0 ? (
-                  <p className="no-comments">{sv.comments.noComments}</p>
-                ) : (
-                  dayData?.parentAComments.map((comment) => (
-                    <div key={comment.id} className="comment">
-                      <span className="comment-timestamp">
-                        {formatSwedishTime(comment.createdAt)}
-                      </span>
-                      <p className="comment-text">{comment.commentText}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="comment-input-group">
-                <textarea
-                  value={parentACommentText}
-                  onChange={(e) => setParentACommentText(e.target.value)}
-                  placeholder={sv.comments.commentPlaceholder}
-                  rows={2}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.ctrlKey) {
-                      handleAddParentAComment();
-                    }
-                  }}
-                />
-                <button
-                  className="add-comment-btn"
-                  onClick={handleAddParentAComment}
-                  disabled={!parentACommentText.trim()}
-                >
-                  {sv.comments.addComment}
-                </button>
-              </div>
-            </div>
+          {/* Special status */}
+          <FormControl fullWidth size="small">
+            <InputLabel id="status-select-label">
+              {sv.dayModal.specialStatus}
+            </InputLabel>
+            <Select
+              labelId="status-select-label"
+              label={sv.dayModal.specialStatus}
+              value={specialStatus ?? ''}
+              onChange={handleSpecialStatusChange}
+            >
+              <MenuItem value="">{sv.specialStatus.normal}</MenuItem>
+              <MenuItem value="PreschoolClosed">
+                {sv.specialStatus.preschoolClosed}
+              </MenuItem>
+              <MenuItem value="Holiday">{sv.specialStatus.holiday}</MenuItem>
+            </Select>
+          </FormControl>
 
-            {/* Caroline Comments */}
-            <div className="comments-section comments-section-b">
-              <h4>{sv.comments.commentCaroline}</h4>
-              <div className="comments-list">
-                {dayData?.parentBComments.length === 0 ? (
-                  <p className="no-comments">{sv.comments.noComments}</p>
-                ) : (
-                  dayData?.parentBComments.map((comment) => (
-                    <div key={comment.id} className="comment">
-                      <span className="comment-timestamp">
-                        {formatSwedishTime(comment.createdAt)}
-                      </span>
-                      <p className="comment-text">{comment.commentText}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className="comment-input-group">
-                <textarea
-                  value={parentBCommentText}
-                  onChange={(e) => setParentBCommentText(e.target.value)}
-                  placeholder={sv.comments.commentPlaceholder}
-                  rows={2}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && e.ctrlKey) {
-                      handleAddParentBComment();
-                    }
-                  }}
-                />
-                <button
-                  className="add-comment-btn"
-                  onClick={handleAddParentBComment}
-                  disabled={!parentBCommentText.trim()}
-                >
-                  {sv.comments.addComment}
-                </button>
-              </div>
-            </div>
-          </div>
+          {/* Error */}
+          {error && <Alert severity="error">{error}</Alert>}
+        </Box>
+      </DialogContent>
 
-          {/* Action Buttons */}
-          <div className="modal-actions">
-            <button className="save-button" onClick={handleSave}>
-              {sv.actions.save}
-            </button>
-            <button className="cancel-button" onClick={onClose}>
-              {sv.actions.cancel}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <DialogActions>
+        <Button onClick={onClose} disabled={saving}>
+          {sv.actions.cancel}
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleSave}
+          disabled={saving}
+          startIcon={saving ? <CircularProgress size={18} /> : undefined}
+        >
+          {sv.actions.save}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
