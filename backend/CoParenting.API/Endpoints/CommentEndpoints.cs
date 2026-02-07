@@ -12,9 +12,24 @@ public static class CommentEndpoints
             .RequireAuthorization();
 
         // POST /api/comments/{dayAssignmentId}
-        group.MapPost("/{dayAssignmentId}", async (int dayAssignmentId, CreateCommentDto dto, ICommentService service) =>
+        group.MapPost("/{dayAssignmentId}", async (
+            int dayAssignmentId,
+            CreateCommentDto dto,
+            HttpContext httpContext,
+            ICommentService service) =>
         {
-            var comment = await service.AddCommentAsync(dayAssignmentId, dto.Parent, dto.CommentText);
+            // Derive parent from authenticated user's role (ParentA or ParentB)
+            var userRole = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+
+            if (string.IsNullOrEmpty(userRole) || (userRole != "ParentA" && userRole != "ParentB"))
+            {
+                return Results.BadRequest(new { error = "Only ParentA or ParentB can create comments" });
+            }
+
+            // Remove "Parent" prefix to get "A" or "B"
+            var parent = userRole.Replace("Parent", "");
+
+            var comment = await service.AddCommentAsync(dayAssignmentId, parent, dto.CommentText);
             return Results.Ok(new CommentDto(
                 comment.Id,
                 comment.DayAssignmentId,

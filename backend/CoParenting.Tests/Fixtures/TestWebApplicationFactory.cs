@@ -49,6 +49,15 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             dbContext.Database.EnsureCreated();
         });
 
+        // Configure admin password hash for testing
+        builder.ConfigureAppConfiguration((context, config) =>
+        {
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Auth:AdminPasswordHash"] = BCrypt.Net.BCrypt.HashPassword("admin123")
+            });
+        });
+
         builder.UseEnvironment("Testing");
     }
 

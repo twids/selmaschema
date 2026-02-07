@@ -63,30 +63,33 @@ public static class AuthEndpoints
         }).AllowAnonymous();
 
         // Get current user info
-        group.MapGet("/me", async (
-            HttpContext httpContext,
-            IAuthService authService) =>
+        group.MapGet("/me", (HttpContext httpContext) =>
         {
-            var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+            // Get user info from claims set by SessionAuthenticationHandler
+            // No need to re-validate the session token - authentication middleware already did it
+            var user = httpContext.User;
 
-            if (string.IsNullOrEmpty(token))
+            if (!user.Identity?.IsAuthenticated ?? true)
             {
                 return Results.Unauthorized();
             }
 
-            var (success, user) = await authService.ValidateSessionAsync(token);
+            var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var email = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+            var role = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+            var displayName = user.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
 
-            if (!success || user == null)
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(role))
             {
                 return Results.Unauthorized();
             }
 
             return Results.Ok(new UserDto
             {
-                Id = user.Id,
-                Email = user.Email,
-                Role = user.Role,
-                DisplayName = user.DisplayName
+                Id = int.Parse(userId),
+                Email = email,
+                Role = role,
+                DisplayName = displayName
             });
         }).RequireAuthorization();
 
@@ -117,7 +120,7 @@ public static class AdminEndpoints
     {
         var group = app.MapGroup("/api/admin")
             .WithTags("Admin")
-            .RequireAuthorization();
+            .RequireAuthorization("RequireAdminRole"); // Apply admin policy to all endpoints in this group
 
         // Create magic link
         group.MapPost("/magic-links", async (
@@ -125,15 +128,7 @@ public static class AdminEndpoints
             HttpContext httpContext,
             IAuthService authService) =>
         {
-            // Verify admin role
-            var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-            var (success, user) = await authService.ValidateSessionAsync(token);
-
-            if (!success || user?.Role != "Admin")
-            {
-                return Results.Forbid();
-            }
-
+            // No need to check role manually - authorization policy handles it
             var (linkSuccess, magicToken) = await authService.CreateMagicLinkAsync(
                 request.Email,
                 request.Role,
@@ -160,17 +155,9 @@ public static class AdminEndpoints
 
         // Get all users
         group.MapGet("/users", async (
-            HttpContext httpContext,
             IAuthService authService) =>
         {
-            var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-            var (success, user) = await authService.ValidateSessionAsync(token);
-
-            if (!success || user?.Role != "Admin")
-            {
-                return Results.Forbid();
-            }
-
+            // No need to check role manually - authorization policy handles it
             var users = await authService.GetAllUsersAsync();
             return Results.Ok(users.Select(u => new UserDto
             {
@@ -187,14 +174,7 @@ public static class AdminEndpoints
             HttpContext httpContext,
             IAuthService authService) =>
         {
-            var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-            var (success, user) = await authService.ValidateSessionAsync(token);
-
-            if (!success || user?.Role != "Admin")
-            {
-                return Results.Forbid();
-            }
-
+            // No need to check role manually - authorization policy handles it
             var magicLinks = await authService.GetPendingMagicLinksAsync();
             var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
 

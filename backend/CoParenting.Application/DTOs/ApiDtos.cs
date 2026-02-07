@@ -57,7 +57,6 @@ public record StatisticsDto(
 );
 
 public record CreateCommentDto(
-    string Parent,
     string CommentText
 );
 

@@ -28,7 +28,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 // Add authentication and authorization
 builder.Services.AddAuthentication("SessionAuth")
     .AddScheme<AuthenticationSchemeOptions, SessionAuthenticationHandler>("SessionAuth", null);
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("RequireParentRole", policy => policy.RequireRole("ParentA", "ParentB"));
+});
 
 // Add CORS
 builder.Services.AddCors(options =>

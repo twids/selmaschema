@@ -255,9 +255,22 @@ public class AuthService : IAuthService
 
     private static string GenerateSecureToken()
     {
+        return GenerateBase64UrlToken();
+    }
+
+    /// <summary>
+    /// Generates a Base64URL-encoded token (URL-safe, no +/= characters).
+    /// Base64URL replaces + with -, / with _, and removes padding =.
+    /// This ensures tokens work correctly in URLs without encoding issues.
+    /// </summary>
+    private static string GenerateBase64UrlToken()
+    {
         var bytes = new byte[64]; // 512 bits
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(bytes);
-        return Convert.ToBase64String(bytes);
+        return Convert.ToBase64String(bytes)
+            .Replace('+', '-')
+            .Replace('/', '_')
+            .TrimEnd('=');
     }
 }
