@@ -1,29 +1,54 @@
-import { ParentNames } from '../types';
-import './Legend.css';
+import { Box, Chip, Stack, Typography } from '@mui/material';
+import { useConfig } from '../context/ConfigContext';
 
-interface LegendProps {
-  parentNames: ParentNames;
-}
+export default function Legend() {
+  const { parentNames } = useConfig();
 
-export default function Legend({ parentNames }: LegendProps) {
   return (
-    <div className="legend">
-      <div className="legend-item">
-        <div className="legend-color parent-a"></div>
-        <span>{parentNames.parentA}</span>
-      </div>
-      <div className="legend-item">
-        <div className="legend-color parent-b"></div>
-        <span>{parentNames.parentB}</span>
-      </div>
-      <div className="legend-item">
-        <div className="legend-color unassigned"></div>
-        <span>Unassigned</span>
-      </div>
-      <div className="legend-item">
-        <div className="legend-color vab-day"></div>
-        <span>VAB (Child Care Leave)</span>
-      </div>
-    </div>
+    <Stack
+      direction="row"
+      spacing={2}
+      alignItems="center"
+      flexWrap="wrap"
+      sx={{ py: 1 }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Box
+          sx={{
+            width: 16,
+            height: 16,
+            bgcolor: 'primary.light',
+            borderRadius: 0.5,
+          }}
+        />
+        <Typography variant="body2">{parentNames.parentAName}</Typography>
+      </Box>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Box
+          sx={{
+            width: 16,
+            height: 16,
+            bgcolor: 'secondary.light',
+            borderRadius: 0.5,
+          }}
+        />
+        <Typography variant="body2">{parentNames.parentBName}</Typography>
+      </Box>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Box
+          sx={{
+            width: 16,
+            height: 16,
+            bgcolor: 'grey.300',
+            borderRadius: 0.5,
+          }}
+        />
+        <Typography variant="body2">Ej tilldelad</Typography>
+      </Box>
+
+      <Chip label="VAB" size="small" color="warning" />
+    </Stack>
   );
 }

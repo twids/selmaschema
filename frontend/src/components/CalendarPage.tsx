@@ -1,14 +1,23 @@
-import { Typography, Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
+import { CalendarProvider } from '../context/CalendarContext';
+import { ConfigProvider } from '../context/ConfigContext';
+import CalendarGrid from './CalendarGrid';
+import MonthControls from './MonthControls';
+import Legend from './Legend';
 
 export default function CalendarPage() {
   return (
-    <Box sx={{ p: 2 }}>
-      <Typography variant="h4" gutterBottom>
-        Kalender
-      </Typography>
-      <Typography color="text.secondary">
-        Kalendervyn byggs i fas 5.
-      </Typography>
-    </Box>
+    <CalendarProvider>
+      <ConfigProvider>
+        <Box sx={{ p: 2 }}>
+          <Typography variant="h4" gutterBottom>
+            Kalender
+          </Typography>
+          <MonthControls />
+          <Legend />
+          <CalendarGrid />
+        </Box>
+      </ConfigProvider>
+    </CalendarProvider>
   );
 }
