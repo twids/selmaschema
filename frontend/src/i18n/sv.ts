@@ -31,6 +31,14 @@ export const sv = {
     delete: 'Ta bort',
     edit: 'Redigera',
   },
+  common: {
+    cancel: 'Avbryt',
+    loading: 'Laddar...',
+  },
+  calendar: {
+    parentA: 'Förälder A',
+    parentB: 'Förälder B',
+  },
   dayModal: {
     assignedTo: 'Tilldelad till:',
     unassigned: 'Ej tilldelad',
@@ -46,6 +54,42 @@ export const sv = {
     parentsInfo: 'Föräldrar, använd den magiska länk som skickades till dig. Den loggar in dig automatiskt.',
     invalidMagicLink: 'Ogiltig eller utgången magisk länk',
     requestNewLink: 'Vänligen begär en ny inloggningslänk.',
+  },
+  changeRequest: {
+    title: 'Bytesförfrågningar',
+    createNew: 'Skapa ny bytesförfrågan',
+    noRequests: 'Inga bytesförfrågningar',
+    requestedBy: 'Begärd av',
+    swapLabel: '{{from}} → {{to}}',
+    comment: 'Kommentar',
+    reviewedBy: 'Granskad av',
+    review: 'Granska',
+    confirmCancel: 'Är du säker på att du vill avbryta denna förfrågan?',
+    tabs: {
+      pending: 'Väntande',
+      all: 'Alla',
+    },
+    create: {
+      title: 'Skapa bytesförfrågan',
+      selectDate: 'Välj datum',
+      addDate: 'Lägg till',
+      selectedDates: 'Valda datum',
+      requestedParent: 'Begär förälder',
+      comment: 'Kommentar (valfritt)',
+      submit: 'Skicka förfrågan',
+    },
+    reviewDialog: {
+      title: 'Granska bytesförfrågan',
+      date: 'Datum',
+      requestedBy: 'Begärd av',
+      responseComment: 'Ditt svar (valfritt)',
+      approve: 'Godkänn',
+      reject: 'Avvisa',
+    },
+    errors: {
+      noDates: 'Välj minst ett datum',
+      createFailed: 'Kunde inte skapa bytesförfrågan',
+    },
   },
 };
 

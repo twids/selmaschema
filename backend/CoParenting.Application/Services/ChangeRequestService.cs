@@ -30,8 +30,9 @@ public class ChangeRequestService : IChangeRequestService
         if (user == null)
             throw new InvalidOperationException("User not found");
 
-        // Determine currentParent based on requester's role (opposite of requested)
-        var currentParent = user.Role == "ParentA" ? "A" : "B";
+        // Determine currentParent: opposite of requested parent
+        // If requesting A, day must currently be B. If requesting B, day must currently be A.
+        var currentParent = requestedParent == "A" ? "B" : "A";
 
         var changeRequests = new List<ChangeRequest>();
 
@@ -87,7 +88,7 @@ public class ChangeRequestService : IChangeRequestService
     {
         var user = await _context.Users.FindAsync(userId);
         if (user == null)
-            return new List<ChangeRequest>();
+            throw new InvalidOperationException("User not found");
 
         // Get requests created by this user OR affecting their days
         var userParent = user.Role == "ParentA" ? "A" : "B";

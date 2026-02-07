@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import MagicLinkHandler from './pages/MagicLinkHandler';
 import CalendarPage from './components/CalendarPage';
 import AdminDashboard from './components/AdminDashboard';
+import { ChangeRequestsPage } from './pages/ChangeRequestsPage';
 
 export default function App() {
   return (
@@ -20,6 +21,18 @@ export default function App() {
           <ProtectedRoute>
             <AppLayout>
               <CalendarPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Change Requests route */}
+      <Route
+        path="/change-requests"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <ChangeRequestsPage />
             </AppLayout>
           </ProtectedRoute>
         }

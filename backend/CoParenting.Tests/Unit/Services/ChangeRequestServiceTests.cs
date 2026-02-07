@@ -305,7 +305,7 @@ public class ChangeRequestServiceTests : IDisposable
             {
                 RequestedByUserId = 2,
                 RequestedForDate = new DateOnly(2025, 3, 16),
-                CurrentParent = "A",
+                CurrentParent = "B", // Changed from "A" to "B" so it doesn't affect Parent A
                 RequestedParent = "B",
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow
@@ -449,7 +449,7 @@ public class ChangeRequestServiceTests : IDisposable
         {
             RequestedByUserId = 1,
             RequestedForDate = new DateOnly(2025, 3, 15),
-            CurrentParent = null, // No existing assignment
+            CurrentParent = "B", // Changed from null - must have a value
             RequestedParent = "A",
             Status = "Pending",
             CreatedAt = DateTime.UtcNow
