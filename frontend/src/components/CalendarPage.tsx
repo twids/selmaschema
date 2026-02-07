@@ -6,6 +6,8 @@ import CalendarGrid from './CalendarGrid';
 import MonthControls from './MonthControls';
 import Legend from './Legend';
 import DayModal from './DayModal';
+import Statistics from './Statistics';
+import ParentNameEditor from './ParentNameEditor';
 import { formatDateKey } from '../utils/dateUtils';
 
 function CalendarPageContent() {
@@ -34,6 +36,8 @@ function CalendarPageContent() {
         dateKey={selectedDate}
         onClose={handleModalClose}
       />
+      <Statistics />
+      <ParentNameEditor />
     </Box>
   );
 }
