@@ -43,7 +43,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dotnet-ef CLI
-        run: dotnet tool install --global dotnet-ef
+        run: |
+          dotnet tool install --global dotnet-ef
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
       - name: Restore solution
         run: dotnet restore selmaschema.sln
@@ -75,6 +77,7 @@ jobs:
         id: meta
         run: |
           echo "app_image=ghcr.io/${{ github.repository_owner }}/selmaschema-app:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "migrator_image=ghcr.io/${{ github.repository_owner }}/selmaschema-migrator:${{ github.sha }}" >> $GITHUB_OUTPUT
       
       - name: Build and push migrator image
         id: build_migrator
@@ -89,11 +92,6 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/selmaschema-migrator:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Set migrator image output
-        id: meta2
-        run: |
-          echo "migrator_image=ghcr.io/${{ github.repository_owner }}/selmaschema-migrator:${{ github.sha }}" >> $GITHUB_OUTPUT
 
   deploy:
     name: Deploy stack to Portainer
