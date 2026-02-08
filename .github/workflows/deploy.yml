@@ -167,13 +167,29 @@ jobs:
           if [ -n "$existing" ] && [ "$existing" != "null" ]; then
             echo "Updating existing stack ID=$existing"
             body=$(jq -n --arg StackFileContent "$CONTENT" --argjson Env "$envArr" '{StackFileContent: $StackFileContent, Env: $Env, Prune: true}')
-            curl -sS -X PUT -H "Content-Type: application/json" -H "X-API-Key: $API_KEY" \
+            response=$(curl -sS -w "\n%{http_code}" -X PUT -H "Content-Type: application/json" -H "X-API-Key: $API_KEY" \
               --data "$body" \
-              "$BASE_URL/api/stacks/$existing?endpointId=$ENDPOINT_ID" | jq -r '.Name + " (ID=" + (.Id|tostring) + ")"'
+              "$BASE_URL/api/stacks/$existing?endpointId=$ENDPOINT_ID")
+            http_code=$(echo "$response" | tail -n1)
+            body_content=$(echo "$response" | sed '$d')
+            if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+              echo "$body_content" | jq -r '.Name + " (ID=" + (.Id|tostring) + ")"'
+            else
+              echo "Failed with HTTP $http_code: $body_content"
+              exit 1
+            fi
           else
             echo "Creating new stack $STACK_NAME"
             body=$(jq -n --arg Name "$STACK_NAME" --arg StackFileContent "$CONTENT" --argjson Env "$envArr" '{Name: $Name, StackFileContent: $StackFileContent, Env: $Env}')
-            curl -sS -X POST -H "Content-Type: application/json" -H "X-API-Key: $API_KEY" \
+            response=$(curl -sS -w "\n%{http_code}" -X POST -H "Content-Type: application/json" -H "X-API-Key: $API_KEY" \
               --data "$body" \
-              "$BASE_URL/api/stacks?type=2&method=string&endpointId=$ENDPOINT_ID" | jq -r '.Name + " (ID=" + (.Id|tostring) + ")"'
+              "$BASE_URL/api/stacks/create/standalone/string?endpointId=$ENDPOINT_ID")
+            http_code=$(echo "$response" | tail -n1)
+            body_content=$(echo "$response" | sed '$d')
+            if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+              echo "$body_content" | jq -r '.Name + " (ID=" + (.Id|tostring) + ")"'
+            else
+              echo "Failed with HTTP $http_code: $body_content"
+              exit 1
+            fi
           fi
