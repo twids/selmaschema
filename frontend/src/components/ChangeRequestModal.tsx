@@ -14,7 +14,6 @@ import {
   Typography,
   Chip,
 } from '@mui/material';
-import { format } from 'date-fns';
 import { createChangeRequests } from '../api/changeRequests';
 import { sv } from '../i18n/sv';
 import { useAuth } from '../auth/AuthContext';

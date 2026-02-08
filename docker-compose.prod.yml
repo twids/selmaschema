@@ -28,7 +28,7 @@ services:
     networks:
       - coparenting-network
     restart: "no"
-    command: ["--connection", "Host=selmadb;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"]
+    command: [ "--connection", "Host=selmadb;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}" ]
 
   # Combined Backend API + Frontend (prebuilt image)
   app:

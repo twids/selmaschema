@@ -71,7 +71,6 @@ describe('ChangeRequestModal', () => {
   });
 
   it('should add and remove dates', async () => {
-    const user = userEvent.setup();
     render(
       <ChangeRequestModal open={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
     );
@@ -115,7 +114,6 @@ describe('ChangeRequestModal', () => {
   });
 
   it('should show error when trying to submit without dates', async () => {
-    const user = userEvent.setup();
     render(
       <ChangeRequestModal open={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
     );
@@ -125,7 +123,6 @@ describe('ChangeRequestModal', () => {
   });
 
   it('should call API and close on successful submission', async () => {
-    const user = userEvent.setup();
     const mockCreateChangeRequests = vi
       .spyOn(changeRequestsApi, 'createChangeRequests')
       .mockResolvedValue([
@@ -168,7 +165,7 @@ describe('ChangeRequestModal', () => {
 
   it('should reset form when closed', async () => {
     const user = userEvent.setup();
-    const { rerender } = render(
+    const { rerender: _rerender } = render(
       <ChangeRequestModal open={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
     );
 
@@ -193,7 +190,6 @@ describe('ChangeRequestModal', () => {
   });
 
   it('should limit comment to 1000 characters', async () => {
-    const user = userEvent.setup();
     render(
       <ChangeRequestModal open={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
     );

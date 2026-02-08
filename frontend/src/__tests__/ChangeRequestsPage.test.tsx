@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ChangeRequestsPage } from '../pages/ChangeRequestsPage';
-import * as changeRequestsApi from '../api/changeRequests';
+import * as _changeRequestsApi from '../api/changeRequests';
 
 // Mock the API
 vi.mock('../api/changeRequests');
@@ -106,9 +106,6 @@ describe('ChangeRequestsPage', () => {
   it('should refresh panel on successful creation', async () => {
     const user = userEvent.setup();
     render(<ChangeRequestsPage />);
-
-    // Store initial panel instance
-    const initialPanel = screen.getByTestId('change-requests-panel');
 
     // Open modal and submit
     await user.click(screen.getByTestId('create-request-button'));

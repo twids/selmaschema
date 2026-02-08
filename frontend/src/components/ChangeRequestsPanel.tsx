@@ -19,7 +19,6 @@ import {
 } from '@mui/material';
 import { sv } from '../i18n/sv';
 import { useAuth } from '../auth/AuthContext';
-import { useAuth } from '../auth/AuthContext';
 import {
   type ChangeRequestDto,
   getMyChangeRequests,
@@ -92,7 +91,7 @@ export const ChangeRequestsPanel: React.FC<ChangeRequestsPanelProps> = ({
   const canCancel = (request: ChangeRequestDto): boolean => {
     if (!user || request.status !== 'Pending') return false;
     // Can cancel own requests
-    return request.requestedByName === user.fullName;
+    return request.requestedByName === user.displayName;
   };
 
   const handleReview = (request: ChangeRequestDto) => {
