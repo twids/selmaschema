@@ -53,4 +53,8 @@ COPY --from=frontend-build /frontend/dist ./wwwroot
 
 EXPOSE 8080
 
+# Run as non-root user for improved container security
+RUN useradd -m -u 10001 appuser && chown -R appuser:appuser /app
+USER appuser
+
 ENTRYPOINT ["dotnet", "CoParenting.API.dll"]

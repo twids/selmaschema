@@ -14,7 +14,7 @@ public class CreateChangeRequestDtoValidatorTests
         // Arrange
         var dto = new CreateChangeRequestDto
         {
-            Dates = new List<DateOnly> { new DateOnly(2025, 3, 15) },
+            Dates = new List<DateOnly> { new(2025, 3, 15) },
             RequestedParent = "A",
             Comment = "Need to switch for work"
         };

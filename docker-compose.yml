@@ -4,16 +4,16 @@ services:
     image: postgres:16-alpine
     container_name: coparenting-db
     environment:
-      - POSTGRES_DB=CoParentingCalendar
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=YourStrong@Passw0rd
+      - POSTGRES_DB=${POSTGRES_DB:-CoParentingCalendar}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./backend/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d CoParentingCalendar"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d CoParentingCalendar" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,9 +28,9 @@ services:
       dockerfile: Dockerfile
     container_name: coparenting-app
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Host=selmadb;Database=CoParentingCalendar;Username=postgres;Password=YourStrong@Passw0rd
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
+      - ASPNETCORE_URLS=${ASPNETCORE_URLS:-http://+:8080}
+      - ConnectionStrings__DefaultConnection=Host=selmadb;Database=${POSTGRES_DB:-CoParentingCalendar};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}
     ports:
       - "3000:8080"
     depends_on:
@@ -42,6 +42,7 @@ services:
 
 volumes:
   postgres-data:
+
 
 networks:
   coparenting-network:

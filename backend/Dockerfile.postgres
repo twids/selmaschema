@@ -1,0 +1,4 @@
+FROM postgres:16-alpine
+
+# Copy initialization SQL into image so it runs on first container start
+COPY init-db.sql /docker-entrypoint-initdb.d/init-db.sql

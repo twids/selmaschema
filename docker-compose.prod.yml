@@ -1,0 +1,56 @@
+services:
+  # PostgreSQL Database (internal only)
+  selmadb:
+    image: postgres:16-alpine
+    container_name: coparenting-db
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - coparenting-network
+
+  # EF Core migrations runner (one-shot)
+  migrator:
+    image: ${MIGRATOR_IMAGE}
+    container_name: coparenting-migrator
+    depends_on:
+      selmadb:
+        condition: service_healthy
+    networks:
+      - coparenting-network
+    restart: "no"
+    command: ["--connection", "Host=selmadb;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"]
+
+  # Combined Backend API + Frontend (prebuilt image)
+  app:
+    image: ${APP_IMAGE}
+    container_name: coparenting-app
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+      - ASPNETCORE_URLS=${ASPNETCORE_URLS}
+      - ConnectionStrings__DefaultConnection=Host=selmadb;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+    ports:
+      - "3000:8080"
+    depends_on:
+      selmadb:
+        condition: service_healthy
+    networks:
+      - coparenting-network
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+
+
+networks:
+  coparenting-network:
+    driver: bridge

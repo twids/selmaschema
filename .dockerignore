@@ -1,0 +1,34 @@
+# VCS
+.git/
+
+# Node
+frontend/node_modules/
+node_modules/
+
+# Dotnet build artifacts
+backend/**/bin/
+backend/**/obj/
+
+# Tests & local configs
+backend/CoParenting.Tests/
+e2e-tests/
+**/*.md
+**/*.instructions.md
+
+# IDE/editor files
+.vscode/
+*.swp
+*.tmp
+
+# Logs
+**/*.log
+
+# Docker
+**/*.dockerfile
+Dockerfile.dev
+backend/Dockerfile.dev
+frontend/Dockerfile.dev
+
+# Env files
+.env
+.env.*

@@ -344,7 +344,7 @@ public class ChangeRequestEndpointsTests : IDisposable
         // Arrange - Create both users first
         var tokenA = await LoginAsParentAAsync();
         var tokenB = await LoginAsParentBAsync();
-        
+
         int changeRequestId;
         using (var scope = _factory.Services.CreateScope())
         {
@@ -405,7 +405,7 @@ public class ChangeRequestEndpointsTests : IDisposable
         // Arrange - Create both users first
         var tokenA = await LoginAsParentAAsync();
         var tokenB = await LoginAsParentBAsync();
-        
+
         int changeRequestId;
         using (var scope = _factory.Services.CreateScope())
         {
