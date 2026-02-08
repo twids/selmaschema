@@ -135,10 +135,10 @@ jobs:
           echo "Using app image: $APP_IMAGE"
           echo "Using migrator image: $MIGRATOR_IMAGE"
           COMPOSE_FILE="docker-compose.prod.yml"
-          CONTENT=$(cat "$COMPOSE_FILE")
-          # Escape JSON
-          CONTENT_JSON=$(jq -Rs . <<< "$CONTENT")
-          echo "content=$CONTENT_JSON" >> $GITHUB_OUTPUT
+          # Read compose file content (will be passed as raw string to jq)
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          cat "$COMPOSE_FILE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create or update stack
         env:
@@ -151,7 +151,7 @@ jobs:
           STACK_NAME="$STACK_NAME"
           APP_IMAGE="${{ needs.build.outputs.app_image }}"
           MIGRATOR_IMAGE="${{ needs.build.outputs.migrator_image }}"
-          CONTENT_JSON="${{ steps.compose.outputs.content }}"
+          CONTENT="${{ steps.compose.outputs.content }}"
 
           # Check if stack exists
           stacks=$(curl -sS -H "X-API-Key: $API_KEY" "$BASE_URL/api/stacks")
@@ -177,13 +177,13 @@ jobs:
 
           if [ -n "$existing" ] && [ "$existing" != "null" ]; then
             echo "Updating existing stack ID=$existing"
-            body=$(jq -n --argjson StackFileContent "$CONTENT_JSON" --argjson Env "$envArr" '{StackFileContent: $StackFileContent, Env: $Env, Prune: true}')
+            body=$(jq -n --arg StackFileContent "$CONTENT" --argjson Env "$envArr" '{StackFileContent: $StackFileContent, Env: $Env, Prune: true}')
             curl -sS -X PUT -H "Content-Type: application/json" -H "X-API-Key: $API_KEY" \
               --data "$body" \
               "$BASE_URL/api/stacks/$existing?endpointId=$ENDPOINT_ID" | jq -r '.Name + " (ID=" + (.Id|tostring) + ")"'
           else
             echo "Creating new stack $STACK_NAME"
-            body=$(jq -n --arg Name "$STACK_NAME" --argjson StackFileContent "$CONTENT_JSON" --argjson Env "$envArr" '{Name: $Name, StackFileContent: $StackFileContent, Env: $Env}')
+            body=$(jq -n --arg Name "$STACK_NAME" --arg StackFileContent "$CONTENT" --argjson Env "$envArr" '{Name: $Name, StackFileContent: $StackFileContent, Env: $Env}')
             curl -sS -X POST -H "Content-Type: application/json" -H "X-API-Key: $API_KEY" \
               --data "$body" \
               "$BASE_URL/api/stacks?type=2&method=string&endpointId=$ENDPOINT_ID" | jq -r '.Name + " (ID=" + (.Id|tostring) + ")"'
