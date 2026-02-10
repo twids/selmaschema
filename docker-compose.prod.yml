@@ -38,7 +38,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=${ASPNETCORE_URLS}
       - ConnectionStrings__DefaultConnection=Host=selmadb;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-      - Auth__AdminPasswordHash=${ADMIN_PASSWORD_HASH}
+      - Auth__AdminPasswordHash=$$2b$$12$$13RAa8h9MJ2IaWfgRX5cSuwXS8iE.tmdWj2kW6J9Omy9nzi9K/7eK
     ports:
       - "3000:8080"
     depends_on:
