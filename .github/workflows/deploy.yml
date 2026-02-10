@@ -131,6 +131,7 @@ jobs:
         env:
           API_KEY: ${{ secrets.PORTAINER_API_KEY }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          ADMIN_PASSWORD_HASH: ${{ secrets.ADMIN_PASSWORD_HASH }}
         run: |
           set -euo pipefail
           BASE_URL="${PORTAINER_URL:-$DEFAULT_PORTAINER_URL}"
@@ -154,6 +155,7 @@ jobs:
             --arg POSTGRES_PASSWORD "$POSTGRES_PASSWORD" \
             --arg ASPNETCORE_ENVIRONMENT "$ASPNETCORE_ENVIRONMENT" \
             --arg ASPNETCORE_URLS "$ASPNETCORE_URLS" \
+            --arg ADMIN_PASSWORD_HASH "$ADMIN_PASSWORD_HASH" \
             '[
                {"name":"APP_IMAGE","value":$APP_IMAGE},
                {"name":"MIGRATOR_IMAGE","value":$MIGRATOR_IMAGE},
@@ -161,7 +163,8 @@ jobs:
                {"name":"POSTGRES_USER","value":$POSTGRES_USER},
                {"name":"POSTGRES_PASSWORD","value":$POSTGRES_PASSWORD},
                {"name":"ASPNETCORE_ENVIRONMENT","value":$ASPNETCORE_ENVIRONMENT},
-               {"name":"ASPNETCORE_URLS","value":$ASPNETCORE_URLS}
+               {"name":"ASPNETCORE_URLS","value":$ASPNETCORE_URLS},
+               {"name":"ADMIN_PASSWORD_HASH","value":$ADMIN_PASSWORD_HASH}
              ]')
 
           if [ -n "$existing" ] && [ "$existing" != "null" ]; then
