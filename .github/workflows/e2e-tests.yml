@@ -3,7 +3,7 @@ name: E2E Tests
 on:
   workflow_dispatch:
   push:
-    branches: [ main, develop, copilot/** ]
+    branches: [ main, develop, copilot/**, dependabot/** ]
   pull_request:
     branches: [ main, develop ]
 
