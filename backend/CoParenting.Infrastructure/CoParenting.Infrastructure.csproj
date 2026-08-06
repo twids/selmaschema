@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Npgsql" Version="8.0.3" />
     <ProjectReference Include="..\CoParenting.Core\CoParenting.Core.csproj" />
   </ItemGroup>
 
