@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -45,11 +45,7 @@ export const ChangeRequestsPanel: React.FC<ChangeRequestsPanelProps> = ({
   const [reviewComment, setReviewComment] = useState('');
   const [reviewLoading, setReviewLoading] = useState(false);
 
-  useEffect(() => {
-    loadRequests();
-  }, [tab]);
-
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     setLoading(true);
     try {
       const data =
@@ -62,7 +58,11 @@ export const ChangeRequestsPanel: React.FC<ChangeRequestsPanelProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [authHeader, tab]);
+
+  useEffect(() => {
+    loadRequests();
+  }, [loadRequests]);
 
   const getStatusColor = (
     status: string

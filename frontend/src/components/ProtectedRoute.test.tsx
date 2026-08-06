@@ -4,7 +4,12 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './ProtectedRoute';
 import { AuthContext } from '../auth/AuthContext';
 
-const createMockAuthContext = (isAuthenticated: boolean, user: any = null) => ({
+type MockAuthContext = NonNullable<React.ContextType<typeof AuthContext>>;
+
+const createMockAuthContext = (
+  isAuthenticated: boolean,
+  user: MockAuthContext['user'] = null
+): MockAuthContext => ({
   token: isAuthenticated ? 'mock-token' : null,
   user,
   isAuthenticated,
@@ -14,7 +19,11 @@ const createMockAuthContext = (isAuthenticated: boolean, user: any = null) => ({
   authHeader: vi.fn(() => ({})),
 });
 
-const renderWithRouter = (component: React.ReactElement, authContext: any, initialRoute = '/protected') => {
+const renderWithRouter = (
+  component: React.ReactElement,
+  authContext: MockAuthContext,
+  initialRoute = '/protected'
+) => {
   return render(
     <MemoryRouter initialEntries={[initialRoute]}>
       <AuthContext.Provider value={authContext}>
