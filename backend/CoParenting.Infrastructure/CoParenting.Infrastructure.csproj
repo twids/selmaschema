@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
     <ProjectReference Include="..\CoParenting.Core\CoParenting.Core.csproj" />
   </ItemGroup>
 
