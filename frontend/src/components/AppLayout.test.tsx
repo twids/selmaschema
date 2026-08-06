@@ -7,8 +7,12 @@ import AppLayout from './AppLayout';
 import { AuthContext } from '../auth/AuthContext';
 
 const mockLogout = vi.fn();
+type MockAuthContext = NonNullable<React.ContextType<typeof AuthContext>>;
 
-const createMockAuthContext = (isAuthenticated: boolean, user: any = null) => ({
+const createMockAuthContext = (
+  isAuthenticated: boolean,
+  user: MockAuthContext['user'] = null
+): MockAuthContext => ({
   token: isAuthenticated ? 'mock-token' : null,
   user,
   isAuthenticated,
@@ -18,7 +22,10 @@ const createMockAuthContext = (isAuthenticated: boolean, user: any = null) => ({
   authHeader: vi.fn(() => ({})),
 });
 
-const renderWithProviders = (component: React.ReactElement, authContext: any) => {
+const renderWithProviders = (
+  component: React.ReactElement,
+  authContext: MockAuthContext
+) => {
   return render(
     <BrowserRouter>
       <ThemeProvider theme={theme}>

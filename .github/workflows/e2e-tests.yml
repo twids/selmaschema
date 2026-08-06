@@ -39,18 +39,18 @@ jobs:
     
     - name: Start database service
       run: |
-        docker compose up -d db
+        docker compose up -d selmadb
         echo "Waiting for PostgreSQL to be healthy..."
         
         # Wait for database health check to pass (max 1 minute - PostgreSQL starts fast)
         for i in {1..12}; do
-          if docker compose ps db | grep -q "healthy"; then
+          if docker compose ps selmadb | grep -q "healthy"; then
             echo "PostgreSQL is healthy!"
             break
           fi
           if [ $i -eq 12 ]; then
             echo "PostgreSQL failed to become healthy"
-            docker compose logs db
+            docker compose logs selmadb
             exit 1
           fi
           echo "Waiting for PostgreSQL health check... ($i/12)"
@@ -58,7 +58,7 @@ jobs:
         done
         
         echo "PostgreSQL is ready, checking logs:"
-        docker compose logs db --tail=20
+        docker compose logs selmadb --tail=20
     
     - name: Start API and frontend services
       run: |
@@ -134,7 +134,7 @@ jobs:
       if: failure()
       run: |
         echo "=== Database Logs ==="
-        docker compose logs db
+        docker compose logs selmadb
         echo "=== Application Logs ==="
         docker compose logs app
     
