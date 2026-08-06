@@ -112,9 +112,11 @@ describe("CommentSection", () => {
           onCommentAdded={vi.fn()}
         />,
       );
-      // formatSwedishTime produces 'HH:MM' in sv-SE format
-      // The timestamps should be visible somewhere
-      expect(screen.getByText(/11:30/)).toBeInTheDocument(); // UTC+1 or just raw time
+      const expectedTime = new Date(sampleComments[0].createdAt).toLocaleTimeString(
+        "sv-SE",
+        { hour: "2-digit", minute: "2-digit" },
+      );
+      expect(screen.getByText(expectedTime)).toBeInTheDocument();
     });
 
     it("shows empty state when no comments", () => {

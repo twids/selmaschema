@@ -5,6 +5,10 @@ import { ChangeRequestsPanel } from '../components/ChangeRequestsPanel';
 import * as changeRequestsApi from '../api/changeRequests';
 import type { ChangeRequestDto } from '../api/changeRequests';
 
+const { mockAuthHeader } = vi.hoisted(() => ({
+  mockAuthHeader: vi.fn(() => ({ Authorization: 'Bearer test-token' })),
+}));
+
 // Mock the API
 vi.mock('../api/changeRequests');
 
@@ -14,9 +18,9 @@ vi.mock('../auth/AuthContext', () => ({
     user: {
       email: 'parenta@test.com',
       role: 'ParentA',
-      fullName: 'Parent A',
+      displayName: 'Parent A',
     },
-    authHeader: () => ({ Authorization: 'Bearer test-token' }),
+    authHeader: mockAuthHeader,
   }),
 }));
 
