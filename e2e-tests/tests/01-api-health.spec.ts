@@ -101,7 +101,7 @@ test.describe('API Health and Configuration', () => {
         data: {
           parent: 'A',
           isVAB: true,
-          comment: 'Test comment',
+          specialStatus: 'Holiday',
         },
         headers: {
           'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ test.describe('API Health and Configuration', () => {
     expect(updatedDay).toBeDefined();
     expect(updatedDay.parent).toBe('A');
     expect(updatedDay.isVAB).toBe(true);
-    expect(updatedDay.comment).toBe('Test comment');
+    expect(updatedDay.specialStatus).toBe('Holiday');
   });
 
   test('should get statistics for a year', async ({ request }) => {
@@ -132,10 +132,10 @@ test.describe('API Health and Configuration', () => {
     expect(response.ok()).toBeTruthy();
     
     const data = await response.json();
-    expect(data).toHaveProperty('year', year);
-    expect(data).toHaveProperty('totalDaysParentA');
-    expect(data).toHaveProperty('totalDaysParentB');
-    expect(data).toHaveProperty('totalVABDays');
-    expect(data).toHaveProperty('totalComments');
+    expect(data).toHaveProperty('parentADays');
+    expect(data).toHaveProperty('parentBDays');
+    expect(data).toHaveProperty('vabDays');
+    expect(data).toHaveProperty('unassignedDays');
+    expect(data).toHaveProperty('daysWithComments');
   });
 });
