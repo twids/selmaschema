@@ -55,9 +55,10 @@ The E2E test suite covers all major functionality of the application:
 
 ### For Local Development
 
-- Node.js 18+ installed
+- Node.js 20 installed
 - Docker and Docker Compose installed
-- Application services running via `docker compose up`
+- Application services running with `docker-compose.e2e.yml`
+- `E2E_ADMIN_PASSWORD` and a matching BCrypt `LOCAL_ADMIN_PASSWORD_HASH`
 
 ### For CI/CD
 
@@ -69,7 +70,7 @@ Install dependencies:
 
 ```bash
 cd e2e-tests
-npm install
+npm ci
 ```
 
 Install Playwright browsers:
@@ -86,7 +87,11 @@ First, make sure all services are running:
 
 ```bash
 cd ..  # Go to project root
-docker compose up
+COMPOSE_FILE=docker-compose.e2e.yml \
+E2E_ADMIN_PASSWORD='replace-with-test-password' \
+LOCAL_ADMIN_ENABLED=true \
+LOCAL_ADMIN_PASSWORD_HASH='replace-with-matching-test-bcrypt-hash' \
+docker compose up --build
 ```
 
 Wait for all services to be healthy (database, API, frontend).
@@ -146,6 +151,9 @@ BASE_URL=http://localhost:5000 npm test
 
 # Change API URL
 API_URL=http://localhost:9000 npm test
+
+# Password matching the local-admin hash used by the E2E stack
+E2E_ADMIN_PASSWORD='replace-with-test-password' npm test
 
 # Run in CI mode
 CI=true npm test

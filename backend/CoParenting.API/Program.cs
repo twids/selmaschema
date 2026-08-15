@@ -170,6 +170,13 @@ if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"
     }
 }
 
+if (app.Configuration.GetValue<bool>("Database:ApplyMigrations"))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {

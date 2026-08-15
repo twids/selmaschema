@@ -1,3 +1,5 @@
+import { request as playwrightRequest } from '@playwright/test';
+
 /**
  * Test configuration and constants
  */
@@ -43,7 +45,16 @@ export async function waitForService(url: string, maxAttempts = 30): Promise<voi
  * Wait for the API to be ready
  */
 export async function waitForAPI(): Promise<void> {
-  await waitForService(`${config.apiURL}/api/config/parent-names`);
+  for (let i = 0; i < 30; i++) {
+    try {
+      const response = await fetch(`${config.apiURL}/api/auth/me`);
+      if (response.ok || response.status === 401) return;
+    } catch {
+      // Service not ready yet
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  throw new Error(`API at ${config.apiURL} did not become ready in time`);
 }
 
 /**
@@ -57,17 +68,21 @@ export async function waitForFrontend(): Promise<void> {
  * Clean up test data by resetting parent names
  */
 export async function cleanupTestData(): Promise<void> {
+  const api = await playwrightRequest.newContext({
+    baseURL: config.apiURL,
+    storageState: 'test-results/.auth/admin.json',
+  });
   try {
-    await fetch(`${config.apiURL}/api/config/parent-names`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    await api.put('/api/config/parent-names', {
+      data: {
         parentAName: 'Parent A',
         parentBName: 'Parent B',
-      }),
+      },
     });
   } catch (error) {
     console.warn('Failed to cleanup test data:', error);
+  } finally {
+    await api.dispose();
   }
 }
 
