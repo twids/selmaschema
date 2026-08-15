@@ -30,22 +30,22 @@ test.describe('Calendar Navigation', () => {
     await expect(page.getByRole('link', { name: 'Kalender' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Byten' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Inbjudningar' })).toBeVisible();
-    await expect(page.getByRole('combobox', { name: 'Månad' })).toBeVisible();
-    await expect(page.getByRole('combobox', { name: 'År' })).toBeVisible();
+    await expect(page.locator('[aria-label="Månad"]')).toBeVisible();
+    await expect(page.locator('[aria-label="År"]')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Föregående månad' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Nästa månad' })).toBeVisible();
   });
 
   test('should display the current month and year by default', async ({ page }) => {
     const now = new Date();
-    await expect(page.getByRole('combobox', { name: 'Månad' }))
+    await expect(page.locator('[aria-label="Månad"]'))
       .toHaveText(monthNames[now.getMonth()]);
-    await expect(page.getByRole('combobox', { name: 'År' }))
+    await expect(page.locator('[aria-label="År"]'))
       .toHaveText(String(now.getFullYear()));
   });
 
   test('should navigate to the next and previous month', async ({ page }) => {
-    const monthSelect = page.getByRole('combobox', { name: 'Månad' });
+    const monthSelect = page.locator('[aria-label="Månad"]');
     const initialMonth = await monthSelect.textContent();
 
     await page.getByRole('button', { name: 'Nästa månad' }).click();
@@ -76,13 +76,13 @@ test.describe('Calendar Navigation', () => {
     const targetMonthIndex = now.getMonth() === 5 ? 6 : 5;
     const targetMonth = monthNames[targetMonthIndex];
 
-    const yearSelect = page.getByRole('combobox', { name: 'År' });
-    await yearSelect.click();
+    const yearSelect = page.locator('[aria-label="År"]');
+    await yearSelect.getByRole('combobox').click();
     await page.getByRole('option', { name: targetYear, exact: true }).click();
     await expect(yearSelect).toHaveText(targetYear);
 
-    const monthSelect = page.getByRole('combobox', { name: 'Månad' });
-    await monthSelect.click();
+    const monthSelect = page.locator('[aria-label="Månad"]');
+    await monthSelect.getByRole('combobox').click();
     await page.getByRole('option', { name: targetMonth, exact: true }).click();
     await expect(monthSelect).toHaveText(targetMonth);
   });
