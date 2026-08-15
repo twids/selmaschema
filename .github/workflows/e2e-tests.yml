@@ -66,6 +66,15 @@ jobs:
         docker compose up -d app
         echo "Waiting for services to start..."
         sleep 10
+      env:
+        # The E2E suite does not contact OIDC; non-secret placeholders keep
+        # production-style startup validation enabled for forked PRs as well.
+        OIDC_AUTHORITY: https://id.example.test
+        OIDC_CLIENT_ID: selma-e2e
+        OIDC_CLIENT_SECRET: e2e-not-a-secret
+        OIDC_CALLBACK_PATH: /signin-oidc
+        LOCAL_ADMIN_ENABLED: false
+        FORWARDED_HEADERS_KNOWN_NETWORK: 172.16.0.0/12
     
     - name: Check services health
       run: |

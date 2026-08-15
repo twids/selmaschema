@@ -30,7 +30,6 @@ export interface ReviewChangeRequestDto {
 export async function createChangeRequests(
   dates: string[],
   requestedParent: string,
-  getAuthHeader: () => Record<string, string>,
   comment?: string
 ): Promise<ChangeRequestDto[]> {
   const dto: CreateChangeRequestDto = {
@@ -39,25 +38,21 @@ export async function createChangeRequests(
     comment,
   };
 
-  return apiPost<ChangeRequestDto[]>('/api/change-requests', dto, getAuthHeader);
+  return apiPost<ChangeRequestDto[]>('/api/change-requests', dto);
 }
 
 /**
  * Gets all change requests created by or affecting the current user
  */
-export async function getMyChangeRequests(
-  getAuthHeader: () => Record<string, string>
-): Promise<ChangeRequestDto[]> {
-  return apiGet<ChangeRequestDto[]>('/api/change-requests', getAuthHeader);
+export async function getMyChangeRequests(): Promise<ChangeRequestDto[]> {
+  return apiGet<ChangeRequestDto[]>('/api/change-requests');
 }
 
 /**
  * Gets all pending change requests
  */
-export async function getPendingChangeRequests(
-  getAuthHeader: () => Record<string, string>
-): Promise<ChangeRequestDto[]> {
-  return apiGet<ChangeRequestDto[]>('/api/change-requests/pending', getAuthHeader);
+export async function getPendingChangeRequests(): Promise<ChangeRequestDto[]> {
+  return apiGet<ChangeRequestDto[]>('/api/change-requests/pending');
 }
 
 /**
@@ -65,9 +60,8 @@ export async function getPendingChangeRequests(
  */
 export async function getChangeRequest(
   id: number,
-  getAuthHeader: () => Record<string, string>
 ): Promise<ChangeRequestDto> {
-  return apiGet<ChangeRequestDto>(`/api/change-requests/${id}`, getAuthHeader);
+  return apiGet<ChangeRequestDto>(`/api/change-requests/${id}`);
 }
 
 /**
@@ -76,7 +70,6 @@ export async function getChangeRequest(
 export async function reviewChangeRequest(
   id: number,
   approved: boolean,
-  getAuthHeader: () => Record<string, string>,
   comment?: string
 ): Promise<ChangeRequestDto> {
   const dto: ReviewChangeRequestDto = {
@@ -87,7 +80,6 @@ export async function reviewChangeRequest(
   return apiPost<ChangeRequestDto>(
     `/api/change-requests/${id}/review`,
     dto,
-    getAuthHeader
   );
 }
 
@@ -96,7 +88,6 @@ export async function reviewChangeRequest(
  */
 export async function cancelChangeRequest(
   id: number,
-  getAuthHeader: () => Record<string, string>
 ): Promise<void> {
-  return apiDelete(`/api/change-requests/${id}`, getAuthHeader);
+  return apiDelete(`/api/change-requests/${id}`);
 }

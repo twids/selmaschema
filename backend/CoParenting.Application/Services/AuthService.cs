@@ -2,14 +2,20 @@ using CoParenting.Application.Interfaces;
 using CoParenting.Core.Entities;
 using CoParenting.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Security.Cryptography;
 
 namespace CoParenting.Application.Services;
 
 public class AuthService : IAuthService
 {
+    private static readonly HashSet<string> ParentRoles = new(StringComparer.Ordinal)
+    {
+        "ParentA",
+        "ParentB"
+    };
+
     private readonly CoParentingDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
@@ -24,192 +30,215 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<(bool Success, Session? Session, User? User)> ValidateAdminPasswordAsync(string password)
+    public async Task<SessionResult> ValidateAdminPasswordAsync(string password)
     {
-        var adminPasswordHash = _configuration["Auth:AdminPasswordHash"];
-
-        if (string.IsNullOrEmpty(adminPasswordHash))
+        if (!_configuration.GetValue<bool>("Auth:LocalAdmin:Enabled"))
         {
-            _logger.LogError("Admin password hash not configured");
-            return (false, null, null);
+            return FailedSession("Local admin login is disabled");
+        }
+
+        var adminPasswordHash = _configuration["Auth:LocalAdmin:PasswordHash"];
+        if (string.IsNullOrWhiteSpace(adminPasswordHash))
+        {
+            _logger.LogError("Local admin password hash is not configured");
+            return FailedSession("Local admin login is not configured");
         }
 
         bool isValid;
         try
         {
-            // Try BCrypt verification
             isValid = BCrypt.Net.BCrypt.Verify(password, adminPasswordHash);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "BCrypt verification failed, hash: {Hash}", adminPasswordHash);
-
-            // Fallback for development: check if password matches plain text (insecure, dev only!)
-            if (adminPasswordHash == password)
-            {
-                _logger.LogWarning("Using plain text password comparison (DEVELOPMENT ONLY)");
-                isValid = true;
-            }
-            else
-            {
-                return (false, null, null);
-            }
+            _logger.LogError(ex, "Local admin password hash is invalid");
+            return FailedSession("Local admin login is not configured");
         }
 
         if (!isValid)
         {
-            _logger.LogWarning("Failed admin login attempt");
-            return (false, null, null);
+            _logger.LogWarning("Failed local admin login attempt");
+            return FailedSession("Invalid credentials");
         }
 
-        // Find or create admin user
-        var adminUser = await _context.Users
-            .FirstOrDefaultAsync(u => u.Role == "Admin");
-
+        var now = DateTime.UtcNow;
+        var adminUser = await _context.Users.FirstOrDefaultAsync(u => u.IsLocalAdmin);
         if (adminUser == null)
         {
             adminUser = new User
             {
-                Email = "admin@coparenting.local",
+                Email = "local-admin@selma.invalid",
                 Role = "Admin",
-                DisplayName = "Administrator",
-                CreatedAt = DateTime.UtcNow
+                DisplayName = "Lokal reservadmin",
+                CreatedAt = now,
+                IsLocalAdmin = true
             };
             _context.Users.Add(adminUser);
-            await _context.SaveChangesAsync();
         }
 
-        // Update last login
-        adminUser.LastLoginAt = DateTime.UtcNow;
-
-        // Create admin session (30 days)
-        var session = new Session
-        {
-            Token = GenerateSecureToken(),
-            UserId = adminUser.Id,
-            User = adminUser,
-            CreatedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(30),
-            IsActive = true
-        };
-
-        _context.Sessions.Add(session);
+        adminUser.LastLoginAt = now;
+        var result = CreateSession(adminUser, now);
         await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Admin logged in successfully");
-        return (true, session, adminUser);
+        return result;
     }
 
-    public async Task<(bool Success, MagicLinkToken? Token)> CreateMagicLinkAsync(
-        string email,
-        string role,
-        string displayName)
+    public async Task<SessionResult> SignInExternalAsync(ExternalLoginInfo login)
     {
-        if (role != "ParentA" && role != "ParentB")
+        var validationError = ValidateExternalLogin(login);
+        if (validationError != null)
         {
-            _logger.LogWarning("Invalid role attempted: {Role}", role);
+            return FailedSession(validationError);
+        }
+
+        await using var transaction = await BeginTransactionIfSupportedAsync();
+        try
+        {
+            var now = DateTime.UtcNow;
+            var normalizedIssuer = NormalizeIssuer(login.Issuer);
+            var normalizedSubject = NormalizeSubject(login.Subject);
+            var identity = await _context.ExternalIdentities
+                .Include(e => e.User)
+                .FirstOrDefaultAsync(e => e.NormalizedIssuer == normalizedIssuer &&
+                                          e.NormalizedSubject == normalizedSubject);
+
+            User? user;
+            if (identity != null)
+            {
+                user = identity.User;
+                identity.LastLoginAt = now;
+            }
+            else
+            {
+                user = await _context.Users.FirstOrDefaultAsync(u =>
+                    !u.IsLocalAdmin && u.Email == login.Email);
+                if (user == null)
+                {
+                    return FailedSession("Invitation required");
+                }
+
+                _context.ExternalIdentities.Add(CreateExternalIdentity(user, login, now));
+            }
+
+            user.LastLoginAt = now;
+            var result = CreateSession(user, now);
+            await _context.SaveChangesAsync();
+            if (transaction != null)
+            {
+                await transaction.CommitAsync();
+            }
+
+            return result;
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogWarning(ex, "Concurrent external identity link was rejected");
+            return FailedSession("Identity could not be linked");
+        }
+    }
+
+    public async Task<SessionResult> CompleteInvitationAsync(int invitationId, ExternalLoginInfo login)
+    {
+        var validationError = ValidateExternalLogin(login);
+        if (validationError != null)
+        {
+            return FailedSession(validationError);
+        }
+
+        await using var transaction = await BeginTransactionIfSupportedAsync();
+        try
+        {
+            var now = DateTime.UtcNow;
+            var invitation = await _context.Invitations.FirstOrDefaultAsync(i => i.Id == invitationId);
+            if (invitation == null || invitation.ConsumedAt != null || invitation.ExpiresAt <= now)
+            {
+                return FailedSession("Invitation is invalid, expired, or already used");
+            }
+
+            var normalizedIssuer = NormalizeIssuer(login.Issuer);
+            var normalizedSubject = NormalizeSubject(login.Subject);
+            var identity = await _context.ExternalIdentities
+                .Include(e => e.User)
+                .FirstOrDefaultAsync(e => e.NormalizedIssuer == normalizedIssuer &&
+                                          e.NormalizedSubject == normalizedSubject);
+
+            User user;
+            if (identity != null)
+            {
+                user = identity.User;
+                if (!string.Equals(user.Role, invitation.Role, StringComparison.Ordinal))
+                {
+                    return FailedSession("A linked identity cannot use an invitation to change role");
+                }
+
+                identity.LastLoginAt = now;
+            }
+            else
+            {
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u =>
+                    !u.IsLocalAdmin && u.Email == login.Email);
+                if (existingUser != null)
+                {
+                    user = existingUser;
+                }
+                else
+                {
+                    user = new User
+                    {
+                        Email = login.Email,
+                        Role = invitation.Role,
+                        DisplayName = string.IsNullOrWhiteSpace(login.DisplayName) ? login.Email : login.DisplayName,
+                        CreatedAt = now
+                    };
+                    _context.Users.Add(user);
+                }
+
+                _context.ExternalIdentities.Add(CreateExternalIdentity(user, login, now));
+            }
+
+            user.LastLoginAt = now;
+            invitation.ConsumedAt = now;
+            invitation.RedeemedByUser = user;
+            invitation.ConcurrencyToken = Guid.NewGuid();
+            var result = CreateSession(user, now);
+
+            await _context.SaveChangesAsync();
+            if (transaction != null)
+            {
+                await transaction.CommitAsync();
+            }
+
+            return result;
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            _logger.LogWarning(ex, "Concurrent invitation redemption was rejected");
+            return FailedSession("Invitation was already used");
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogWarning(ex, "Invitation redemption conflicted with an existing identity");
+            return FailedSession("Identity could not be linked");
+        }
+    }
+
+    public async Task<(bool Success, User? User)> ValidateSessionAsync(string rawSessionToken)
+    {
+        if (string.IsNullOrWhiteSpace(rawSessionToken))
+        {
             return (false, null);
         }
 
-        // Find or create user
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-
-        if (user == null)
-        {
-            user = new User
-            {
-                Email = email,
-                Role = role,
-                DisplayName = displayName,
-                CreatedAt = DateTime.UtcNow
-            };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-        }
-        else if (user.Role != role)
-        {
-            // Update role if it changed
-            user.Role = role;
-            user.DisplayName = displayName;
-            await _context.SaveChangesAsync();
-        }
-
-        // Create magic link token (24 hours expiry)
-        var magicToken = new MagicLinkToken
-        {
-            Token = GenerateSecureToken(),
-            UserId = user.Id,
-            User = user,
-            CreatedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddHours(24),
-            IsUsed = false
-        };
-
-        _context.MagicLinkTokens.Add(magicToken);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Magic link created for user {Email} with role {Role}", email, role);
-        return (true, magicToken);
-    }
-
-    public async Task<(bool Success, Session? Session, User? User, string? Error)> ExchangeMagicTokenAsync(string token)
-    {
-        var magicToken = await _context.MagicLinkTokens
-            .Include(mt => mt.User)
-            .FirstOrDefaultAsync(mt => mt.Token == token);
-
-        if (magicToken == null)
-        {
-            return (false, null, null, "Invalid token");
-        }
-
-        if (magicToken.IsUsed)
-        {
-            return (false, null, null, "Token already used");
-        }
-
-        if (magicToken.ExpiresAt < DateTime.UtcNow)
-        {
-            return (false, null, null, "Token expired");
-        }
-
-        // Mark token as used
-        magicToken.IsUsed = true;
-        magicToken.UsedAt = DateTime.UtcNow;
-
-        // Update user last login
-        magicToken.User.LastLoginAt = DateTime.UtcNow;
-
-        // Create long-lived session (90 days)
-        var session = new Session
-        {
-            Token = GenerateSecureToken(),
-            UserId = magicToken.UserId,
-            User = magicToken.User,
-            CreatedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(90),
-            IsActive = true
-        };
-
-        _context.Sessions.Add(session);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Magic token exchanged for session for user {Email}", magicToken.User.Email);
-        return (true, session, magicToken.User, null);
-    }
-
-    public async Task<(bool Success, User? User)> ValidateSessionAsync(string sessionToken)
-    {
+        var hash = TokenService.HashToken(rawSessionToken);
         var session = await _context.Sessions
             .Include(s => s.User)
-            .FirstOrDefaultAsync(s => s.Token == sessionToken && s.IsActive);
+            .FirstOrDefaultAsync(s => s.TokenHash == hash && s.IsActive);
 
         if (session == null)
         {
             return (false, null);
         }
 
-        if (session.ExpiresAt < DateTime.UtcNow)
+        if (session.ExpiresAt <= DateTime.UtcNow)
         {
             session.IsActive = false;
             await _context.SaveChangesAsync();
@@ -219,11 +248,15 @@ public class AuthService : IAuthService
         return (true, session.User);
     }
 
-    public async Task<bool> InvalidateSessionAsync(string sessionToken)
+    public async Task<bool> InvalidateSessionAsync(string rawSessionToken)
     {
-        var session = await _context.Sessions
-            .FirstOrDefaultAsync(s => s.Token == sessionToken);
+        if (string.IsNullOrWhiteSpace(rawSessionToken))
+        {
+            return false;
+        }
 
+        var hash = TokenService.HashToken(rawSessionToken);
+        var session = await _context.Sessions.FirstOrDefaultAsync(s => s.TokenHash == hash && s.IsActive);
         if (session == null)
         {
             return false;
@@ -231,46 +264,144 @@ public class AuthService : IAuthService
 
         session.IsActive = false;
         await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Session invalidated for user {UserId}", session.UserId);
         return true;
     }
 
-    public async Task<List<MagicLinkToken>> GetPendingMagicLinksAsync()
+    public async Task<InvitationCreationResult> CreateInvitationAsync(
+        int creatorUserId,
+        string creatorRole,
+        string role,
+        string? emailHint)
     {
-        return await _context.MagicLinkTokens
-            .Include(mt => mt.User)
-            .Where(mt => !mt.IsUsed && mt.ExpiresAt > DateTime.UtcNow)
-            .OrderByDescending(mt => mt.CreatedAt)
+        if (!ParentRoles.Contains(role) && !(role == "Admin" && creatorRole == "Admin"))
+        {
+            return new InvitationCreationResult(false, null, null, "Role is not allowed");
+        }
+
+        emailHint = string.IsNullOrWhiteSpace(emailHint) ? null : emailHint.Trim();
+        var rawToken = TokenService.GenerateToken();
+        var now = DateTime.UtcNow;
+        var invitation = new Invitation
+        {
+            TokenHash = TokenService.HashToken(rawToken),
+            EmailHint = emailHint,
+            Role = role,
+            CreatedByUserId = creatorUserId,
+            CreatedAt = now,
+            ExpiresAt = now.AddHours(24),
+            ConcurrencyToken = Guid.NewGuid()
+        };
+
+        _context.Invitations.Add(invitation);
+        await _context.SaveChangesAsync();
+        return new InvitationCreationResult(true, rawToken, invitation, null);
+    }
+
+    public async Task<Invitation?> GetValidInvitationByTokenAsync(string rawToken)
+    {
+        if (string.IsNullOrWhiteSpace(rawToken))
+        {
+            return null;
+        }
+
+        var hash = TokenService.HashToken(rawToken);
+        return await _context.Invitations.AsNoTracking().FirstOrDefaultAsync(i =>
+            i.TokenHash == hash && i.ConsumedAt == null && i.ExpiresAt > DateTime.UtcNow);
+    }
+
+    public async Task<Invitation?> GetValidInvitationByIdAsync(int invitationId)
+    {
+        return await _context.Invitations.AsNoTracking().FirstOrDefaultAsync(i =>
+            i.Id == invitationId && i.ConsumedAt == null && i.ExpiresAt > DateTime.UtcNow);
+    }
+
+    public async Task<List<Invitation>> GetInvitationsAsync(int requesterUserId, bool isAdmin)
+    {
+        return await _context.Invitations
+            .AsNoTracking()
+            .Include(i => i.CreatedByUser)
+            .Where(i => isAdmin || i.CreatedByUserId == requesterUserId)
+            .OrderByDescending(i => i.CreatedAt)
             .ToListAsync();
     }
 
     public async Task<List<User>> GetAllUsersAsync()
     {
         return await _context.Users
+            .AsNoTracking()
             .OrderBy(u => u.Role)
             .ThenBy(u => u.Email)
             .ToListAsync();
     }
 
-    private static string GenerateSecureToken()
+    private SessionResult CreateSession(User user, DateTime now)
     {
-        return GenerateBase64UrlToken();
+        var rawToken = TokenService.GenerateToken();
+        var session = new Session
+        {
+            TokenHash = TokenService.HashToken(rawToken),
+            User = user,
+            CreatedAt = now,
+            ExpiresAt = now.AddDays(30),
+            IsActive = true
+        };
+        _context.Sessions.Add(session);
+        return new SessionResult(true, rawToken, session, user, null);
     }
 
-    /// <summary>
-    /// Generates a Base64URL-encoded token (URL-safe, no +/= characters).
-    /// Base64URL replaces + with -, / with _, and removes padding =.
-    /// This ensures tokens work correctly in URLs without encoding issues.
-    /// </summary>
-    private static string GenerateBase64UrlToken()
+    private static ExternalIdentity CreateExternalIdentity(User user, ExternalLoginInfo login, DateTime now)
     {
-        var bytes = new byte[64]; // 512 bits
-        using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(bytes);
-        return Convert.ToBase64String(bytes)
-            .Replace('+', '-')
-            .Replace('/', '_')
-            .TrimEnd('=');
+        return new ExternalIdentity
+        {
+            User = user,
+            Issuer = login.Issuer,
+            Subject = login.Subject,
+            NormalizedIssuer = NormalizeIssuer(login.Issuer),
+            NormalizedSubject = NormalizeSubject(login.Subject),
+            CreatedAt = now,
+            LastLoginAt = now
+        };
+    }
+
+    private static string? ValidateExternalLogin(ExternalLoginInfo login)
+    {
+        if (string.IsNullOrWhiteSpace(login.Issuer) || string.IsNullOrWhiteSpace(login.Subject))
+        {
+            return "OIDC identity is incomplete";
+        }
+
+        if (!login.EmailVerified || string.IsNullOrWhiteSpace(login.Email))
+        {
+            return "A verified email address is required";
+        }
+
+        return null;
+    }
+
+    private static string NormalizeIssuer(string issuer)
+    {
+        var trimmed = issuer.Trim().TrimEnd('/');
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri))
+        {
+            return trimmed;
+        }
+
+        var builder = new UriBuilder(uri)
+        {
+            Scheme = uri.Scheme.ToLowerInvariant(),
+            Host = uri.Host.ToLowerInvariant()
+        };
+        return builder.Uri.AbsoluteUri.TrimEnd('/');
+    }
+
+    private static string NormalizeSubject(string subject) => subject.Trim();
+
+    private static SessionResult FailedSession(string error) => new(false, null, null, null, error);
+
+    private async Task<IDbContextTransaction?> BeginTransactionIfSupportedAsync()
+    {
+        return _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync()
+            : null;
     }
 }

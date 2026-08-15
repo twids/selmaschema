@@ -1,214 +1,110 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using CoParenting.Application.DTOs;
-using CoParenting.Application.Interfaces;
+using CoParenting.Application.Services;
+using CoParenting.Core.Entities;
+using CoParenting.Infrastructure.Data;
 using CoParenting.Tests.Fixtures;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 
 namespace CoParenting.Tests.Integration;
 
 public class AdminEndpointsTests : IDisposable
 {
-    private readonly TestWebApplicationFactory _factory;
-    private readonly HttpClient _client;
+    private readonly TestWebApplicationFactory _factory = new($"InvitationTests_{Guid.NewGuid()}");
 
-    public AdminEndpointsTests()
-    {
-        _factory = new TestWebApplicationFactory(Guid.NewGuid().ToString());
-        _client = _factory.CreateClient();
-    }
-
-    public void Dispose()
-    {
-        _client.Dispose();
-        _factory.Dispose();
-    }
+    public void Dispose() => _factory.Dispose();
 
     [Fact]
-    public async Task CreateMagicLink_AsAdmin_ShouldReturn200()
+    public async Task Admin_CanCreateAdminInvitation_WithoutPersistingRawToken()
     {
-        // Arrange
-        var adminToken = await LoginAsAdminAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
-        var request = new CreateMagicLinkRequest
-        {
-            Email = "newparent@test.com",
-            Role = "ParentA",
-            DisplayName = "New Parent"
-        };
+        using var client = await CreateClientForRoleAsync("Admin", "admin@test.se");
 
-        // Act
-        var response = await _client.PostAsJsonAsync("/api/admin/magic-links", request);
+        var response = await client.PostAsJsonAsync(
+            "/api/invitations",
+            new CreateInvitationRequest { Role = "Admin", EmailHint = "hint@test.se" });
+        var created = await response.Content.ReadFromJsonAsync<CreatedInvitationDto>();
 
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var magicLinkResponse = await response.Content.ReadFromJsonAsync<MagicLinkResponse>();
-        magicLinkResponse.Should().NotBeNull();
-        magicLinkResponse!.Token.Should().NotBeNullOrEmpty();
-        magicLinkResponse.Token.Should().MatchRegex("^[A-Za-z0-9_-]+$");
-        magicLinkResponse.MagicLink.Should().Contain("/auth/magic?token=");
-        magicLinkResponse.Role.Should().Be("ParentA");
-    }
+        created!.Invitation.Role.Should().Be("Admin");
+        created.Invitation.EmailHint.Should().Be("hint@test.se");
+        created.InvitationUrl.Should().StartWith("https://localhost/api/auth/invitations/");
 
-    [Fact]
-    public async Task CreateMagicLink_AsParent_ShouldReturn403()
-    {
-        // Arrange
-        var parentToken = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", parentToken);
-        var request = new CreateMagicLinkRequest
-        {
-            Email = "newparent@test.com",
-            Role = "ParentB",
-            DisplayName = "New Parent B"
-        };
-
-        // Act
-        var response = await _client.PostAsJsonAsync("/api/admin/magic-links", request);
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task CreateMagicLink_WithoutAuth_ShouldReturn401()
-    {
-        // Arrange
-        var request = new CreateMagicLinkRequest
-        {
-            Email = "newparent@test.com",
-            Role = "ParentA",
-            DisplayName = "New Parent"
-        };
-
-        // Act
-        var response = await _client.PostAsJsonAsync("/api/admin/magic-links", request);
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task GetAllUsers_AsAdmin_ShouldReturn200()
-    {
-        // Arrange
-        var adminToken = await LoginAsAdminAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
-
-        // Act
-        var response = await _client.GetAsync("/api/admin/users");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var users = await response.Content.ReadFromJsonAsync<List<UserDto>>();
-        users.Should().NotBeNull();
-        users.Should().NotBeEmpty();
-        users.Should().Contain(u => u.Role == "Admin");
-    }
-
-    [Fact]
-    public async Task GetAllUsers_AsParent_ShouldReturn403()
-    {
-        // Arrange
-        var parentToken = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", parentToken);
-
-        // Act
-        var response = await _client.GetAsync("/api/admin/users");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task GetAllUsers_WithoutAuth_ShouldReturn401()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/admin/users");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task GetPendingMagicLinks_AsAdmin_ShouldReturn200()
-    {
-        // Arrange
-        var adminToken = await LoginAsAdminAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
-
-        // Create a magic link first
-        var createRequest = new CreateMagicLinkRequest
-        {
-            Email = "pending@test.com",
-            Role = "ParentA",
-            DisplayName = "Pending Parent"
-        };
-        await _client.PostAsJsonAsync("/api/admin/magic-links", createRequest);
-
-        // Act
-        var response = await _client.GetAsync("/api/admin/magic-links");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var magicLinks = await response.Content.ReadFromJsonAsync<List<MagicLinkResponse>>();
-        magicLinks.Should().NotBeNull();
-        magicLinks.Should().Contain(ml => ml.Email == "pending@test.com");
-    }
-
-    [Fact]
-    public async Task GetPendingMagicLinks_AsParent_ShouldReturn403()
-    {
-        // Arrange
-        var parentToken = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", parentToken);
-
-        // Act
-        var response = await _client.GetAsync("/api/admin/magic-links");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task GetPendingMagicLinks_WithoutAuth_ShouldReturn401()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/admin/magic-links");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    #region Helper Methods
-
-    private async Task<string> LoginAsAdminAsync()
-    {
-        var request = new AdminLoginRequest { Password = "admin123" };
-        var response = await _client.PostAsJsonAsync("/api/auth/admin/login", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
-    }
-
-    private async Task<string> LoginAsParentAAsync()
-    {
-        // Create magic link for ParentA
+        var rawToken = created.InvitationUrl.Split('/').Last();
         using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        var (success, magicToken) = await authService.CreateMagicLinkAsync(
-            "parenta@test.com",
-            "ParentA",
-            "Parent A");
-
-        // Exchange magic token for session
-        var request = new MagicTokenRequest { Token = magicToken!.Token };
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        var stored = scope.ServiceProvider.GetRequiredService<CoParentingDbContext>().Invitations.Single();
+        stored.TokenHash.Should().Be(TokenService.HashToken(rawToken));
+        stored.TokenHash.Should().NotContain(rawToken);
     }
 
-    #endregion
+    [Fact]
+    public async Task Parent_CanCreateParentInvitation_ButNotAdminInvitation()
+    {
+        using var client = await CreateClientForRoleAsync("ParentA", "parent@test.se");
+
+        var parentResponse = await client.PostAsJsonAsync(
+            "/api/invitations",
+            new CreateInvitationRequest { Role = "ParentB" });
+        var adminResponse = await client.PostAsJsonAsync(
+            "/api/invitations",
+            new CreateInvitationRequest { Role = "Admin" });
+
+        parentResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        adminResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task UsersSeeOwnInvitations_WhileAdminSeesAll()
+    {
+        using var first = await CreateClientForRoleAsync("ParentA", "first@test.se");
+        using var second = await CreateClientForRoleAsync("ParentB", "second@test.se");
+        using var admin = await CreateClientForRoleAsync("Admin", "admin@test.se");
+        await first.PostAsJsonAsync("/api/invitations", new CreateInvitationRequest { Role = "ParentA" });
+        await second.PostAsJsonAsync("/api/invitations", new CreateInvitationRequest { Role = "ParentB" });
+
+        var own = await first.GetFromJsonAsync<List<InvitationDto>>("/api/invitations");
+        var all = await admin.GetFromJsonAsync<List<InvitationDto>>("/api/invitations");
+
+        own.Should().ContainSingle();
+        own![0].CreatedByName.Should().Be("first@test.se");
+        all.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task AdminUsersEndpoint_RemainsAdminOnly()
+    {
+        using var parent = await CreateClientForRoleAsync("ParentA", "parent@test.se");
+        using var admin = await CreateClientForRoleAsync("Admin", "admin@test.se");
+
+        (await parent.GetAsync("/api/admin/users")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await admin.GetAsync("/api/admin/users")).StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    private async Task<HttpClient> CreateClientForRoleAsync(string role, string email)
+    {
+        using var scope = _factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
+        var user = new User
+        {
+            Email = email,
+            Role = role,
+            DisplayName = email,
+            CreatedAt = DateTime.UtcNow
+        };
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+
+        var raw = TokenService.GenerateToken();
+        context.Sessions.Add(new Session
+        {
+            UserId = user.Id,
+            TokenHash = TokenService.HashToken(raw),
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddDays(30),
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+        return _factory.CreateAuthenticatedClient(raw);
+    }
 }

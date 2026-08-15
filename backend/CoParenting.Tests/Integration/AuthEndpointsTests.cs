@@ -1,25 +1,23 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using CoParenting.Application.DTOs;
-using CoParenting.Application.Interfaces;
-using CoParenting.Core.Entities;
-using CoParenting.Infrastructure.Data;
 using CoParenting.Tests.Fixtures;
-using FluentAssertions;
+using CoParenting.Application.Interfaces;
+using CoParenting.Infrastructure.Data;
+using CoParenting.Core.Entities;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
+using FluentAssertions;
 
 namespace CoParenting.Tests.Integration;
 
 public class AuthEndpointsTests : IDisposable
 {
-    private readonly TestWebApplicationFactory _factory;
+    private readonly TestWebApplicationFactory _factory = new($"AuthTests_{Guid.NewGuid()}");
     private readonly HttpClient _client;
 
     public AuthEndpointsTests()
     {
-        _factory = new TestWebApplicationFactory(Guid.NewGuid().ToString());
         _client = _factory.CreateClient();
     }
 
@@ -30,192 +28,160 @@ public class AuthEndpointsTests : IDisposable
     }
 
     [Fact]
-    public async Task AdminLogin_WithValidPassword_ShouldReturnSessionToken()
+    public async Task AdminLogin_SetsHardenedCookie_AndReturnsNoToken()
     {
-        // Arrange
-        var request = new AdminLoginRequest { Password = "admin123" };
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/admin/login",
+            new AdminLoginRequest { Password = "admin123" });
 
-        // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/admin/login", request);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        authResponse.Should().NotBeNull();
-        authResponse!.Token.Should().NotBeNullOrEmpty();
-        authResponse.Token.Should().MatchRegex("^[A-Za-z0-9_-]+$", "should be Base64URL encoded");
-        authResponse.User.Should().NotBeNull();
-        authResponse.User.Role.Should().Be("Admin");
-        authResponse.ExpiresAt.Should().BeAfter(DateTime.UtcNow.AddDays(29));
+        var cookie = response.Headers.GetValues("Set-Cookie").Single(v => v.StartsWith("__Host-selma-session="));
+        var normalizedCookie = cookie.ToLowerInvariant();
+        normalizedCookie.Should().Contain("secure");
+        normalizedCookie.Should().Contain("httponly");
+        normalizedCookie.Should().Contain("samesite=lax");
+        normalizedCookie.Should().Contain("path=/");
+        normalizedCookie.Should().Contain("expires=");
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        document.RootElement.TryGetProperty("token", out _).Should().BeFalse();
+        document.RootElement.GetProperty("user").GetProperty("role").GetString().Should().Be("Admin");
     }
 
     [Fact]
-    public async Task AdminLogin_WithInvalidPassword_ShouldReturn401()
+    public async Task AdminLogin_WithInvalidPassword_IsUnauthorized()
     {
-        // Arrange
-        var request = new AdminLoginRequest { Password = "wrong-password" };
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/admin/login",
+            new AdminLoginRequest { Password = "wrong" });
 
-        // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/admin/login", request);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        response.Headers.Contains("Set-Cookie").Should().BeFalse();
     }
 
     [Fact]
-    public async Task GetMe_WithValidToken_ShouldReturnUserFromClaims()
+    public async Task Me_UsesSessionCookie()
     {
-        // Arrange
-        var adminToken = await LoginAsAdminAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+        await LoginAsAdminAsync();
 
-        // Act
         var response = await _client.GetAsync("/api/auth/me");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
         var user = await response.Content.ReadFromJsonAsync<UserDto>();
-        user.Should().NotBeNull();
-        user!.Role.Should().Be("Admin");
-        user.Email.Should().Be("admin@coparenting.local");
-    }
 
-    [Fact]
-    public async Task GetMe_WithoutAuthHeader_ShouldReturn401()
-    {
-        // Act
-        var response = await _client.GetAsync("/api/auth/me");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task GetMe_WithInvalidToken_ShouldReturn401()
-    {
-        // Arrange
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "invalid-token");
-
-        // Act
-        var response = await _client.GetAsync("/api/auth/me");
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task Logout_WithValidToken_ShouldInvalidateSession()
-    {
-        // Arrange
-        var adminToken = await LoginAsAdminAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
-
-        // Act - Logout
-        var logoutResponse = await _client.PostAsync("/api/auth/logout", null);
-
-        // Assert - Logout succeeds
-        logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        // Act - Try to use same token for /me
-        var meResponse = await _client.GetAsync("/api/auth/me");
-
-        // Assert - Token no longer valid
-        meResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task ExchangeMagicToken_WithValidToken_ShouldReturnSession()
-    {
-        // Arrange
-        var magicToken = await CreateMagicLinkForParentAAsync();
-        var request = new MagicTokenRequest { Token = magicToken };
-
-        // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
-
-        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        authResponse.Should().NotBeNull();
-        authResponse!.Token.Should().NotBeNullOrEmpty();
-        authResponse.Token.Should().MatchRegex("^[A-Za-z0-9_-]+$");
-        authResponse.User.Role.Should().Be("ParentA");
-        authResponse.ExpiresAt.Should().BeAfter(DateTime.UtcNow.AddDays(89));
+        user!.Role.Should().Be("Admin");
     }
 
     [Fact]
-    public async Task ExchangeMagicToken_WhenUsedTwice_ShouldReturn400()
+    public async Task BearerToken_IsNotAccepted()
     {
-        // Arrange
-        var magicToken = await CreateMagicLinkForParentAAsync();
-        var request = new MagicTokenRequest { Token = magicToken };
-        await _client.PostAsJsonAsync("/api/auth/magic", request); // Use it once
+        using var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", "any-token");
 
-        // Act - Try to use it again
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
+        var response = await client.GetAsync("/api/auth/me");
 
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public async Task ExchangeMagicToken_WithExpiredToken_ShouldReturn400()
+    public async Task OidcLogin_UsesAuthorizationCodeWithPkce()
     {
-        // Arrange - Create expired token directly in database
-        using var scope = _factory.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
+        var response = await _client.GetAsync("/api/auth/login?returnUrl=%2Fchange-requests");
 
-        var user = new User
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        var location = response.Headers.Location!.ToString();
+        location.Should().StartWith("https://id.test/authorize?");
+        location.Should().Contain("response_type=code");
+        location.Should().Contain("code_challenge=");
+        location.Should().Contain("code_challenge_method=S256");
+        location.Should().Contain("scope=openid profile email");
+    }
+
+    [Fact]
+    public async Task OidcCallback_WithInvalidState_ReturnsSwedishLoginErrorRoute()
+    {
+        var response = await _client.GetAsync("/signin-oidc?code=test&state=invalid");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location!.ToString().Should().Be("/login?error=oidc_failed");
+    }
+
+    [Fact]
+    public async Task OidcCallbackTicket_ShowsPendingIdentity_AndCompletesInvitation()
+    {
+        int invitationId;
+        using (var scope = _factory.Services.CreateScope())
         {
-            Email = "expired@test.com",
-            Role = "ParentA",
-            DisplayName = "Expired User",
-            CreatedAt = DateTime.UtcNow.AddDays(-2)
-        };
-        dbContext.Users.Add(user);
-        await dbContext.SaveChangesAsync();
+            var context = scope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
+            var creator = new User
+            {
+                Email = "creator@test.se",
+                Role = "Admin",
+                DisplayName = "Creator",
+                CreatedAt = DateTime.UtcNow
+            };
+            context.Users.Add(creator);
+            await context.SaveChangesAsync();
+            var service = scope.ServiceProvider.GetRequiredService<IAuthService>();
+            var created = await service.CreateInvitationAsync(
+                creator.Id,
+                creator.Role,
+                "ParentA",
+                "hint@test.se");
+            invitationId = created.Invitation!.Id;
+        }
 
-        var expiredToken = new MagicLinkToken
-        {
-            Token = "expired-token-123",
-            UserId = user.Id,
-            CreatedAt = DateTime.UtcNow.AddDays(-2),
-            ExpiresAt = DateTime.UtcNow.AddDays(-1), // Expired yesterday
-            IsUsed = false
-        };
-        dbContext.MagicLinkTokens.Add(expiredToken);
-        await dbContext.SaveChangesAsync();
+        using var callbackClient = _factory.CreateOidcCallbackClient(
+            invitationId,
+            "actual@test.se",
+            "callback-subject");
+        var pendingResponse = await callbackClient.GetAsync("/api/auth/invitations/pending");
+        var pending = await pendingResponse.Content.ReadFromJsonAsync<PendingInvitationDto>();
+        var completeResponse = await callbackClient.PostAsync("/api/auth/invitations/complete", null);
 
-        var request = new MagicTokenRequest { Token = "expired-token-123" };
+        pendingResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        pending!.EmailHint.Should().Be("hint@test.se");
+        pending.VerifiedEmail.Should().Be("actual@test.se");
+        completeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        completeResponse.Headers.GetValues("Set-Cookie").Should().Contain(v =>
+            v.StartsWith("__Host-selma-session="));
 
-        // Act
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using var verifyScope = _factory.Services.CreateScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
+        db.Invitations.Single(i => i.Id == invitationId).ConsumedAt.Should().NotBeNull();
+        db.Users.Single(u => u.Email == "actual@test.se").Role.Should().Be("ParentA");
     }
 
-    #region Helper Methods
-
-    private async Task<string> LoginAsAdminAsync()
+    [Fact]
+    public async Task Logout_RevokesSessionAndClearsCookie()
     {
-        var request = new AdminLoginRequest { Password = "admin123" };
-        var response = await _client.PostAsJsonAsync("/api/auth/admin/login", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        await LoginAsAdminAsync();
+
+        var logout = await _client.PostAsync("/api/auth/logout", null);
+        var me = await _client.GetAsync("/api/auth/me");
+
+        logout.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        logout.Headers.GetValues("Set-Cookie").Should().Contain(v =>
+            v.StartsWith("__Host-selma-session=") && v.Contains("expires=", StringComparison.OrdinalIgnoreCase));
+        me.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    private async Task<string> CreateMagicLinkForParentAAsync()
+    [Theory]
+    [InlineData(null, "/")]
+    [InlineData("", "/")]
+    [InlineData("/change-requests", "/change-requests")]
+    [InlineData("https://evil.example", "/")]
+    [InlineData("//evil.example", "/")]
+    [InlineData("/\\evil.example", "/")]
+    public void ReturnUrl_IsRestrictedToLocalRelativePaths(string? candidate, string expected)
     {
-        using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        var (success, magicToken) = await authService.CreateMagicLinkAsync(
-            "parenta@test.com",
-            "ParentA",
-            "Parent A Test");
-        success.Should().BeTrue();
-        return magicToken!.Token;
+        CoParenting.API.Endpoints.AuthEndpoints.SafeReturnUrl(candidate).Should().Be(expected);
     }
 
-    #endregion
+    private async Task LoginAsAdminAsync()
+    {
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/admin/login",
+            new AdminLoginRequest { Password = "admin123" });
+        response.EnsureSuccessStatusCode();
+    }
 }

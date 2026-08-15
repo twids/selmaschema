@@ -10,7 +10,6 @@ import {
 } from "@mui/material";
 import { useCalendar } from "../context/CalendarContext";
 import { useConfig } from "../context/ConfigContext";
-import { useAuth } from "../auth/AuthContext";
 import { apiGet } from "../api/client";
 import type { StatisticsDto } from "../api/types";
 
@@ -33,8 +32,6 @@ interface StatCard {
 export default function Statistics() {
   const { currentYear } = useCalendar();
   const { parentNames } = useConfig();
-  const { authHeader } = useAuth();
-
   const [data, setData] = useState<StatisticsDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +41,7 @@ export default function Statistics() {
       setLoading(true);
       setError(null);
       try {
-        const stats = await apiGet<StatisticsDto>(
-          `/api/statistics/${year}`,
-          authHeader,
-        );
+        const stats = await apiGet<StatisticsDto>(`/api/statistics/${year}`);
         setData(stats);
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -55,7 +49,7 @@ export default function Statistics() {
         setLoading(false);
       }
     },
-    [authHeader],
+    [],
   );
 
   useEffect(() => {

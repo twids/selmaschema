@@ -47,7 +47,7 @@ public class CommentEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Create a day assignment first
         var dayDto = new UpdateDayAssignmentDto("A", false, null);
@@ -73,7 +73,7 @@ public class CommentEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentBAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Create a day assignment first
         var dayDto = new UpdateDayAssignmentDto("B", false, null);
@@ -98,17 +98,17 @@ public class CommentEndpointsTests : IDisposable
     {
         // Arrange
         var adminToken = await LoginAsAdminAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+        _client.SetSessionCookie(adminToken);
 
         // Create a day assignment first as ParentA
         var parentToken = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", parentToken);
+        _client.SetSessionCookie(parentToken);
         var dayDto = new UpdateDayAssignmentDto("A", false, null);
         var dayResponse = await _client.PutAsJsonAsync("/api/days/2026/2/25", dayDto);
         var day = await dayResponse.Content.ReadFromJsonAsync<DayAssignmentDto>();
 
         // Switch back to admin
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+        _client.SetSessionCookie(adminToken);
         var commentDto = new CreateCommentDto("Admin comment");
 
         // Act
@@ -123,7 +123,7 @@ public class CommentEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         var dayDto = new UpdateDayAssignmentDto("A", false, null);
         var dayResponse = await _client.PutAsJsonAsync("/api/days/2026/3/1", dayDto);
@@ -160,7 +160,7 @@ public class CommentEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Act
         var response = await _client.GetAsync("/api/comments/9999");
@@ -179,7 +179,7 @@ public class CommentEndpointsTests : IDisposable
         var tokenB = await LoginAsParentBAsync();
 
         // Create a day as ParentA
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenA);
+        _client.SetSessionCookie(tokenA);
         var dayDto = new UpdateDayAssignmentDto("A", false, null);
         var dayResponse = await _client.PutAsJsonAsync("/api/days/2026/3/10", dayDto);
         var day = await dayResponse.Content.ReadFromJsonAsync<DayAssignmentDto>();
@@ -188,11 +188,11 @@ public class CommentEndpointsTests : IDisposable
         await _client.PostAsJsonAsync($"/api/comments/{day!.Id}", new CreateCommentDto("Parent A comment"));
 
         // Add comment from ParentB
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenB);
+        _client.SetSessionCookie(tokenB);
         await _client.PostAsJsonAsync($"/api/comments/{day.Id}", new CreateCommentDto("Parent B comment"));
 
         // Act - Get comments as any user
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenA);
+        _client.SetSessionCookie(tokenA);
         var response = await _client.GetAsync($"/api/comments/{day.Id}");
 
         // Assert
@@ -208,7 +208,7 @@ public class CommentEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         var dayDto = new UpdateDayAssignmentDto("A", false, null);
         var dayResponse = await _client.PutAsJsonAsync("/api/days/2026/3/15", dayDto);
@@ -254,7 +254,7 @@ public class CommentEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Create day and comment
         var dayDto = new UpdateDayAssignmentDto("A", false, null);
@@ -282,7 +282,7 @@ public class CommentEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         var updateDto = new UpdateCommentDto("Updated text");
 
         // Act
@@ -311,7 +311,7 @@ public class CommentEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Create day and comment
         var dayDto = new UpdateDayAssignmentDto("A", false, null);
@@ -339,7 +339,7 @@ public class CommentEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Act
         var response = await _client.DeleteAsync("/api/comments/9999");
@@ -354,40 +354,17 @@ public class CommentEndpointsTests : IDisposable
 
     private async Task<string> LoginAsAdminAsync()
     {
-        var request = new AdminLoginRequest { Password = "admin123" };
-        var response = await _client.PostAsJsonAsync("/api/auth/admin/login", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        return await _factory.AuthenticateClientAsync(_client, "Admin", "admin@test.com");
     }
 
     private async Task<string> LoginAsParentAAsync()
     {
-        using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        var (success, magicToken) = await authService.CreateMagicLinkAsync(
-            "parenta@test.com",
-            "ParentA",
-            "Parent A Test");
-
-        var request = new MagicTokenRequest { Token = magicToken!.Token };
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        return await _factory.AuthenticateClientAsync(_client, "ParentA", "parenta@test.com");
     }
 
     private async Task<string> LoginAsParentBAsync()
     {
-        using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        var (success, magicToken) = await authService.CreateMagicLinkAsync(
-            "parentb@test.com",
-            "ParentB",
-            "Parent B Test");
-
-        var request = new MagicTokenRequest { Token = magicToken!.Token };
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        return await _factory.AuthenticateClientAsync(_client, "ParentB", "parentb@test.com");
     }
 
     #endregion

@@ -5,10 +5,6 @@ import { ChangeRequestsPanel } from '../components/ChangeRequestsPanel';
 import * as changeRequestsApi from '../api/changeRequests';
 import type { ChangeRequestDto } from '../api/changeRequests';
 
-const { mockAuthHeader } = vi.hoisted(() => ({
-  mockAuthHeader: vi.fn(() => ({ Authorization: 'Bearer test-token' })),
-}));
-
 // Mock the API
 vi.mock('../api/changeRequests');
 
@@ -20,7 +16,6 @@ vi.mock('../auth/AuthContext', () => ({
       role: 'ParentA',
       displayName: 'Parent A',
     },
-    authHeader: mockAuthHeader,
   }),
 }));
 
@@ -195,7 +190,7 @@ describe('ChangeRequestsPanel', () => {
     await user.click(screen.getByTestId('approve-button'));
 
     await waitFor(() => {
-      expect(mockReview).toHaveBeenCalledWith(1, true, expect.any(Function), undefined);
+      expect(mockReview).toHaveBeenCalledWith(1, true, undefined);
     });
   });
 
@@ -224,7 +219,7 @@ describe('ChangeRequestsPanel', () => {
     await user.click(screen.getByTestId('reject-button'));
 
     await waitFor(() => {
-      expect(mockReview).toHaveBeenCalledWith(1, false, expect.any(Function), 'Sorry, cannot switch');
+      expect(mockReview).toHaveBeenCalledWith(1, false, 'Sorry, cannot switch');
     });
   });
 
@@ -257,7 +252,7 @@ describe('ChangeRequestsPanel', () => {
     await user.click(screen.getByTestId('cancel-button-1'));
 
     await waitFor(() => {
-      expect(mockCancel).toHaveBeenCalledWith(1, expect.any(Function));
+      expect(mockCancel).toHaveBeenCalledWith(1);
     });
   });
 

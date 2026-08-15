@@ -13,13 +13,14 @@ const createMockAuthContext = (
   isAuthenticated: boolean,
   user: MockAuthContext['user'] = null
 ): MockAuthContext => ({
-  token: isAuthenticated ? 'mock-token' : null,
   user,
   isAuthenticated,
+  isLoading: false,
   loginAdmin: vi.fn(),
-  exchangeMagicToken: vi.fn(),
+  startOidcLogin: vi.fn(),
+  completeInvitation: vi.fn(),
   logout: mockLogout,
-  authHeader: vi.fn(() => ({})),
+  refreshUser: vi.fn(),
 });
 
 const renderWithProviders = (

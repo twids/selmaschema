@@ -45,6 +45,19 @@ export default function AppLayout({ children }: AppLayoutProps) {
               >
                 Byten
               </Button>
+              <Button
+                component={Link}
+                to="/invitations"
+                color="inherit"
+                sx={{
+                  mr: 2,
+                  borderBottom: location.pathname === '/invitations' ? 2 : 0,
+                  borderRadius: 0,
+                }}
+                data-testid="nav-invitations"
+              >
+                Inbjudningar
+              </Button>
               {user.role === 'Admin' && (
                 <Button
                   component={Link}
@@ -63,7 +76,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <Typography variant="body1" sx={{ mr: 2 }}>
                 {user.displayName || user.email}
               </Typography>
-              <Button color="inherit" onClick={logout}>
+              <Button color="inherit" onClick={() => void logout()}>
                 Logga ut
               </Button>
             </>

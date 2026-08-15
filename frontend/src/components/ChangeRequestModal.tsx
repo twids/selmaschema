@@ -16,7 +16,6 @@ import {
 } from '@mui/material';
 import { createChangeRequests } from '../api/changeRequests';
 import { sv } from '../i18n/sv';
-import { useAuth } from '../auth/AuthContext';
 
 interface ChangeRequestModalProps {
   open: boolean;
@@ -29,7 +28,6 @@ export const ChangeRequestModal: React.FC<ChangeRequestModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { authHeader } = useAuth();
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [currentDate, setCurrentDate] = useState<string>('');
   const [requestedParent, setRequestedParent] = useState<string>('A');
@@ -58,7 +56,7 @@ export const ChangeRequestModal: React.FC<ChangeRequestModalProps> = ({
     setError(null);
 
     try {
-      await createChangeRequests(selectedDates, requestedParent, authHeader, comment || undefined);
+      await createChangeRequests(selectedDates, requestedParent, comment || undefined);
       onSuccess();
       handleClose();
     } catch (err) {

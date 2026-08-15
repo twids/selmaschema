@@ -1,29 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, waitFor, act } from "@testing-library/react";
 import { ConfigProvider, useConfig } from "../context/ConfigContext";
-import { AuthContext } from "../auth/AuthContext";
 import type { ParentNamesDto } from "../api/types";
 
 /* ---------- helpers ---------- */
 
-function mockAuthValue() {
-  return {
-    token: "test-token",
-    user: null,
-    isAuthenticated: true,
-    loginAdmin: vi.fn(),
-    exchangeMagicToken: vi.fn(),
-    logout: vi.fn(),
-    authHeader: () => ({ Authorization: "Bearer test-token" }),
-  };
-}
-
 function wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthContext.Provider value={mockAuthValue()}>
-      <ConfigProvider>{children}</ConfigProvider>
-    </AuthContext.Provider>
-  );
+  return <ConfigProvider>{children}</ConfigProvider>;
 }
 
 function ConfigConsumer({

@@ -7,13 +7,6 @@ import * as changeRequestsApi from '../api/changeRequests';
 // Mock the API
 vi.mock('../api/changeRequests');
 
-// Mock AuthContext
-vi.mock('../auth/AuthContext', () => ({
-  useAuth: () => ({
-    authHeader: () => ({ Authorization: 'Bearer test-token' }),
-  }),
-}));
-
 // Mock sv translations
 vi.mock('../i18n/sv', () => ({
   sv: {

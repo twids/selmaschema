@@ -6,7 +6,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useAuth } from "../auth/AuthContext";
 import { apiGet, apiPut } from "../api/client";
 import type { ParentNamesDto } from "../api/types";
 
@@ -30,8 +29,6 @@ const DEFAULT_NAMES: ParentNamesDto = {
 /* ---------- provider ---------- */
 
 export function ConfigProvider({ children }: { children: React.ReactNode }) {
-  const { authHeader } = useAuth();
-
   const [parentNames, setParentNames] = useState<ParentNamesDto>(DEFAULT_NAMES);
   const [loading, setLoading] = useState(true);
 
@@ -40,10 +37,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
 
     async function load() {
       try {
-        const data = await apiGet<ParentNamesDto>(
-          "/api/config/parent-names",
-          authHeader,
-        );
+        const data = await apiGet<ParentNamesDto>("/api/config/parent-names");
         if (!cancelled) {
           setParentNames(data);
         }
@@ -61,7 +55,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [authHeader]);
+  }, []);
 
   const updateParentNames = useCallback(
     async (parentA: string, parentB: string) => {
@@ -72,11 +66,10 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
       const result = await apiPut<ParentNamesDto>(
         "/api/config/parent-names",
         body,
-        authHeader,
       );
       setParentNames(result);
     },
-    [authHeader],
+    [],
   );
 
   const value: ConfigContextValue = {

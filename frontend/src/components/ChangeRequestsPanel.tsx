@@ -34,7 +34,7 @@ interface ChangeRequestsPanelProps {
 export const ChangeRequestsPanel: React.FC<ChangeRequestsPanelProps> = ({
   onRequestsChanged,
 }) => {
-  const { user, authHeader } = useAuth();
+  const { user } = useAuth();
   const [tab, setTab] = useState<'pending' | 'all'>('pending');
   const [requests, setRequests] = useState<ChangeRequestDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,15 +50,15 @@ export const ChangeRequestsPanel: React.FC<ChangeRequestsPanelProps> = ({
     try {
       const data =
         tab === 'pending'
-          ? await getPendingChangeRequests(authHeader)
-          : await getMyChangeRequests(authHeader);
+          ? await getPendingChangeRequests()
+          : await getMyChangeRequests();
       setRequests(data);
     } catch (error) {
       console.error('Failed to load change requests:', error);
     } finally {
       setLoading(false);
     }
-  }, [authHeader, tab]);
+  }, [tab]);
 
   useEffect(() => {
     loadRequests();
@@ -107,7 +107,6 @@ export const ChangeRequestsPanel: React.FC<ChangeRequestsPanelProps> = ({
       await reviewChangeRequest(
         reviewDialog.request.id,
         approved,
-        authHeader,
         reviewComment || undefined
       );
       setReviewDialog({ open: false, request: null });
@@ -125,7 +124,7 @@ export const ChangeRequestsPanel: React.FC<ChangeRequestsPanelProps> = ({
     if (!confirm(sv.changeRequest.confirmCancel)) return;
 
     try {
-      await cancelChangeRequest(request.id, authHeader);
+      await cancelChangeRequest(request.id);
       await loadRequests();
       onRequestsChanged?.();
     } catch (error) {

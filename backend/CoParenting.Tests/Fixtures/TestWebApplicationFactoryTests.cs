@@ -52,7 +52,7 @@ public class TestWebApplicationFactoryTests
         client.Should().NotBeNull();
         client.DefaultRequestHeaders.Should().NotBeNull();
         var cookieHeader = client.DefaultRequestHeaders.GetValues("Cookie").FirstOrDefault();
-        cookieHeader.Should().Contain("session_token=test-session-token");
+        cookieHeader.Should().Contain("__Host-selma-session=test-session-token");
     }
 
     [Fact]

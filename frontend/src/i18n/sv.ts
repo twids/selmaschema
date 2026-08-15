@@ -46,14 +46,12 @@ export const sv = {
     specialStatus: 'Special status:',
   },
   auth: {
-    adminLogin: 'Admin Inloggning',
+    adminLogin: 'Reservadmin',
     password: 'Lösenord',
     signIn: 'Logga in',
     signingIn: 'Loggar in...',
     invalidPassword: 'Ogiltigt administratörslösenord',
-    parentsInfo: 'Föräldrar, använd den magiska länk som skickades till dig. Den loggar in dig automatiskt.',
-    invalidMagicLink: 'Ogiltig eller utgången magisk länk',
-    requestNewLink: 'Vänligen begär en ny inloggningslänk.',
+    parentsInfo: 'Logga in med Widsell ID eller använd en inbjudningslänk.',
   },
   changeRequest: {
     title: 'Bytesförfrågningar',

@@ -6,7 +6,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useAuth } from "../auth/AuthContext";
 import { apiGet, apiPost, apiPut } from "../api/client";
 import type {
   CalendarData,
@@ -58,8 +57,6 @@ function toDayMap(data: MonthDataDto): CalendarData {
 /* ---------- provider ---------- */
 
 export function CalendarProvider({ children }: { children: React.ReactNode }) {
-  const { authHeader } = useAuth();
-
   const now = new Date();
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(now.getMonth() + 1);
@@ -72,10 +69,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
       try {
-        const data = await apiGet<MonthDataDto>(
-          `/api/days/${year}/${month}`,
-          authHeader,
-        );
+        const data = await apiGet<MonthDataDto>(`/api/days/${year}/${month}`);
         setCalendarData(toDayMap(data));
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -83,7 +77,7 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     },
-    [authHeader],
+    [],
   );
 
   const updateDay = useCallback(
@@ -93,18 +87,18 @@ export function CalendarProvider({ children }: { children: React.ReactNode }) {
       day: number,
       data: UpdateDayAssignmentDto,
     ) => {
-      await apiPut(`/api/days/${year}/${month}/${day}`, data, authHeader);
+      await apiPut(`/api/days/${year}/${month}/${day}`, data);
       await loadMonthData(year, month);
     },
-    [authHeader, loadMonthData],
+    [loadMonthData],
   );
 
   const initializeMonth = useCallback(
     async (year: number, month: number) => {
-      await apiPost(`/api/days/${year}/${month}/initialize`, undefined, authHeader);
+      await apiPost(`/api/days/${year}/${month}/initialize`);
       await loadMonthData(year, month);
     },
-    [authHeader, loadMonthData],
+    [loadMonthData],
   );
 
   const setMonth = useCallback((month: number) => {

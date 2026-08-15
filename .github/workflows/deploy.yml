@@ -17,6 +17,11 @@ env:
   POSTGRES_USER: postgres
   ASPNETCORE_ENVIRONMENT: Production
   ASPNETCORE_URLS: http://+:8080
+  OIDC_AUTHORITY: ${{ vars.OIDC_AUTHORITY }}
+  OIDC_CLIENT_ID: ${{ vars.OIDC_CLIENT_ID }}
+  OIDC_CALLBACK_PATH: /signin-oidc
+  LOCAL_ADMIN_ENABLED: ${{ vars.LOCAL_ADMIN_ENABLED }}
+  FORWARDED_HEADERS_KNOWN_NETWORK: ${{ vars.FORWARDED_HEADERS_KNOWN_NETWORK }}
 
 jobs:
   build:
@@ -131,6 +136,8 @@ jobs:
         env:
           API_KEY: ${{ secrets.PORTAINER_API_KEY }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          OIDC_CLIENT_SECRET: ${{ secrets.OIDC_CLIENT_SECRET }}
+          LOCAL_ADMIN_PASSWORD_HASH: ${{ secrets.LOCAL_ADMIN_PASSWORD_HASH }}
         run: |
           set -euo pipefail
           BASE_URL="${PORTAINER_URL:-$DEFAULT_PORTAINER_URL}"
@@ -154,6 +161,13 @@ jobs:
             --arg POSTGRES_PASSWORD "$POSTGRES_PASSWORD" \
             --arg ASPNETCORE_ENVIRONMENT "$ASPNETCORE_ENVIRONMENT" \
             --arg ASPNETCORE_URLS "$ASPNETCORE_URLS" \
+            --arg OIDC_AUTHORITY "$OIDC_AUTHORITY" \
+            --arg OIDC_CLIENT_ID "$OIDC_CLIENT_ID" \
+            --arg OIDC_CLIENT_SECRET "$OIDC_CLIENT_SECRET" \
+            --arg OIDC_CALLBACK_PATH "$OIDC_CALLBACK_PATH" \
+            --arg LOCAL_ADMIN_ENABLED "$LOCAL_ADMIN_ENABLED" \
+            --arg LOCAL_ADMIN_PASSWORD_HASH "$LOCAL_ADMIN_PASSWORD_HASH" \
+            --arg FORWARDED_HEADERS_KNOWN_NETWORK "$FORWARDED_HEADERS_KNOWN_NETWORK" \
             '[
                {"name":"APP_IMAGE","value":$APP_IMAGE},
                {"name":"MIGRATOR_IMAGE","value":$MIGRATOR_IMAGE},
@@ -161,7 +175,14 @@ jobs:
                {"name":"POSTGRES_USER","value":$POSTGRES_USER},
                {"name":"POSTGRES_PASSWORD","value":$POSTGRES_PASSWORD},
                {"name":"ASPNETCORE_ENVIRONMENT","value":$ASPNETCORE_ENVIRONMENT},
-               {"name":"ASPNETCORE_URLS","value":$ASPNETCORE_URLS}
+               {"name":"ASPNETCORE_URLS","value":$ASPNETCORE_URLS},
+               {"name":"OIDC_AUTHORITY","value":$OIDC_AUTHORITY},
+               {"name":"OIDC_CLIENT_ID","value":$OIDC_CLIENT_ID},
+               {"name":"OIDC_CLIENT_SECRET","value":$OIDC_CLIENT_SECRET},
+               {"name":"OIDC_CALLBACK_PATH","value":$OIDC_CALLBACK_PATH},
+               {"name":"LOCAL_ADMIN_ENABLED","value":$LOCAL_ADMIN_ENABLED},
+               {"name":"LOCAL_ADMIN_PASSWORD_HASH","value":$LOCAL_ADMIN_PASSWORD_HASH},
+               {"name":"FORWARDED_HEADERS_KNOWN_NETWORK","value":$FORWARDED_HEADERS_KNOWN_NETWORK}
              ]')
 
           if [ -n "$existing" ] && [ "$existing" != "null" ]; then

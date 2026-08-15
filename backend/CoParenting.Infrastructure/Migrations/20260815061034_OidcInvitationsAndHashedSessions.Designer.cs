@@ -3,6 +3,7 @@ using System;
 using CoParenting.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CoParenting.Infrastructure.Migrations
 {
     [DbContext(typeof(CoParentingDbContext))]
-    partial class CoParentingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260815061034_OidcInvitationsAndHashedSessions")]
+    partial class OidcInvitationsAndHashedSessions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

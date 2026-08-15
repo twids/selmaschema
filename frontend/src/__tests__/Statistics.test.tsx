@@ -9,7 +9,6 @@ import type { StatisticsDto } from "../api/types";
 
 const mockUseCalendar = vi.fn();
 const mockUseConfig = vi.fn();
-const mockUseAuth = vi.fn();
 
 vi.mock("../context/CalendarContext", () => ({
   useCalendar: () => mockUseCalendar(),
@@ -17,10 +16,6 @@ vi.mock("../context/CalendarContext", () => ({
 
 vi.mock("../context/ConfigContext", () => ({
   useConfig: () => mockUseConfig(),
-}));
-
-vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => mockUseAuth(),
 }));
 
 /* ---------- helpers ---------- */
@@ -43,15 +38,6 @@ function setupDefaults() {
     parentNames: { parentAName: "Alice", parentBName: "Bob" },
     loading: false,
     updateParentNames: vi.fn(),
-  });
-  mockUseAuth.mockReturnValue({
-    authHeader: () => ({ Authorization: "Bearer test-token" }),
-    token: "test-token",
-    user: null,
-    isAuthenticated: true,
-    loginAdmin: vi.fn(),
-    exchangeMagicToken: vi.fn(),
-    logout: vi.fn(),
   });
 }
 

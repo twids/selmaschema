@@ -1,9 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-type Role = "Admin" | "ParentA" | "ParentB" | "";
+export type Role = "Admin" | "ParentA" | "ParentB";
 
-interface UserDto {
+export interface UserDto {
   id: number;
   email: string;
   role: Role;
@@ -12,19 +12,19 @@ interface UserDto {
 }
 
 interface AuthResponse {
-  token: string;
   user: UserDto;
   expiresAt: string;
 }
 
 interface AuthContextValue {
-  token: string | null;
   user: UserDto | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   loginAdmin: (password: string) => Promise<boolean>;
-  exchangeMagicToken: (magicToken: string) => Promise<boolean>;
-  logout: () => void;
-  authHeader: () => Record<string, string>;
+  startOidcLogin: (returnUrl?: string) => void;
+  completeInvitation: () => Promise<boolean>;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -32,84 +32,94 @@ export const AuthContext = createContext<AuthContextValue | undefined>(undefined
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem("auth_token")
-  );
-  const [user, setUser] = useState<UserDto | null>(() => {
-    const raw = localStorage.getItem("auth_user");
-    return raw ? JSON.parse(raw) : null;
-  });
+  const [user, setUser] = useState<UserDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (token) localStorage.setItem("auth_token", token);
-    else localStorage.removeItem("auth_token");
-  }, [token]);
-
-  useEffect(() => {
-    if (user) localStorage.setItem("auth_user", JSON.stringify(user));
-    else localStorage.removeItem("auth_user");
-  }, [user]);
-
-  const isAuthenticated = !!token;
-
-  const loginAdmin = async (password: string) => {
+  const refreshUser = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/admin/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        credentials: "include",
+      });
+      setUser(response.ok ? ((await response.json()) as UserDto) : null);
+    } catch {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshUser();
+  }, [refreshUser]);
+
+  const loginAdmin = useCallback(async (password: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
+        credentials: "include",
       });
-      if (!res.ok) return false;
-      const data: AuthResponse = await res.json();
-      setToken(data.token);
+      if (!response.ok) return false;
+      const data = (await response.json()) as AuthResponse;
       setUser(data.user);
       return true;
     } catch {
       return false;
     }
-  };
+  }, []);
 
-  const exchangeMagicToken = async (magicToken: string) => {
+  const startOidcLogin = useCallback((returnUrl = "/") => {
+    const target = `${API_BASE_URL}/api/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`;
+    window.location.assign(target);
+  }, []);
+
+  const completeInvitation = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/magic`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/invitations/complete`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: magicToken }),
+        credentials: "include",
       });
-      if (!res.ok) return false;
-      const data: AuthResponse = await res.json();
-      setToken(data.token);
+      if (!response.ok) return false;
+      const data = (await response.json()) as AuthResponse;
       setUser(data.user);
       return true;
     } catch {
       return false;
     }
-  };
+  }, []);
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-  };
+  const logout = useCallback(async () => {
+    try {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      setUser(null);
+    }
+  }, []);
 
-  const authHeader = useMemo<() => Record<string, string>>(() => {
-    return () => (token ? { Authorization: `Bearer ${token}` } : {} as Record<string, string>);
-  }, [token]);
-
-  const value: AuthContextValue = {
-    token,
-    user,
-    isAuthenticated,
-    loginAdmin,
-    exchangeMagicToken,
-    logout,
-    authHeader,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: user !== null,
+        isLoading,
+        loginAdmin,
+        startOidcLogin,
+        completeInvitation,
+        logout,
+        refreshUser,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
+export function useAuth(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  return context;
 }

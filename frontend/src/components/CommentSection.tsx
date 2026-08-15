@@ -10,7 +10,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useAuth } from "../auth/AuthContext";
 import { addComment } from "../api/comments";
 import { sv } from "../i18n/sv";
 import { formatSwedishTime } from "../i18n/sv";
@@ -31,8 +30,6 @@ export default function CommentSection({
   dayAssignmentId,
   onCommentAdded,
 }: CommentSectionProps) {
-  const { authHeader } = useAuth();
-
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +47,6 @@ export default function CommentSection({
       const created = await addComment(
         dayAssignmentId,
         { parent, commentText: trimmed },
-        authHeader,
       );
       onCommentAdded(created);
       setText("");
