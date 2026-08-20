@@ -48,7 +48,7 @@ public static class AuthEndpoints
             IAuthService authService) =>
         {
             var external = await context.AuthenticateAsync(AuthSchemes.OidcTemporary);
-            var login = ToExternalLogin(external.Principal);
+            var login = ToExternalLogin(external.Principal, external.Properties);
             if (!external.Succeeded || login == null)
             {
                 await context.SignOutAsync(AuthSchemes.OidcTemporary);
@@ -73,7 +73,7 @@ public static class AuthEndpoints
         {
             var external = await context.AuthenticateAsync(AuthSchemes.OidcTemporary);
             var invitationId = GetPendingInvitationId(external);
-            var login = ToExternalLogin(external.Principal);
+            var login = ToExternalLogin(external.Principal, external.Properties);
             if (!external.Succeeded || invitationId == null || login == null ||
                 await authService.GetValidInvitationByIdAsync(invitationId.Value) == null)
             {
@@ -90,7 +90,7 @@ public static class AuthEndpoints
         {
             var external = await context.AuthenticateAsync(AuthSchemes.OidcTemporary);
             var invitationId = GetPendingInvitationId(external);
-            var login = ToExternalLogin(external.Principal);
+            var login = ToExternalLogin(external.Principal, external.Properties);
             if (!external.Succeeded || invitationId == null || login == null)
             {
                 return Results.Unauthorized();
@@ -119,7 +119,7 @@ public static class AuthEndpoints
         {
             var external = await context.AuthenticateAsync(AuthSchemes.OidcTemporary);
             var invitationId = GetPendingInvitationId(external);
-            var login = ToExternalLogin(external.Principal);
+            var login = ToExternalLogin(external.Principal, external.Properties);
             if (!external.Succeeded || invitationId == null || login == null)
             {
                 return Results.Unauthorized();
@@ -185,14 +185,18 @@ public static class AuthEndpoints
             : null;
     }
 
-    private static ExternalLoginInfo? ToExternalLogin(ClaimsPrincipal? principal)
+    private static ExternalLoginInfo? ToExternalLogin(
+        ClaimsPrincipal? principal,
+        AuthenticationProperties? properties)
     {
         if (principal == null)
         {
             return null;
         }
 
-        var issuer = principal.FindFirstValue("iss") ?? string.Empty;
+        var issuer = properties?.Items.TryGetValue(AuthSchemes.OidcIssuerProperty, out var validatedIssuer) == true
+            ? validatedIssuer ?? string.Empty
+            : principal.FindFirstValue("iss") ?? string.Empty;
         var subject = principal.FindFirstValue("sub") ?? string.Empty;
         var email = principal.FindFirstValue("email") ?? principal.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
         var displayName = principal.FindFirstValue("name") ?? principal.FindFirstValue(ClaimTypes.Name) ?? email;

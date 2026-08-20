@@ -17,9 +17,25 @@ Referenser: [OAuth2/OIDC provider](https://docs.goauthentik.io/add-secure-apps/p
 ## Produktionskonfiguration
 
 GitHub Actions bygger, testar och publicerar applikationsimagen till
-`ghcr.io/twids/selmaschema/coparenting-app`. Repositoryt utför ingen automatisk
-deploy till en driftmiljö. Driftplattformen ska själv hämta imagen och tillföra
-följande konfiguration vid start:
+`ghcr.io/twids/selmaschema/coparenting-app:latest` efter varje lyckad push till
+`main`. Produktions-Compose använder denna flytande tagg och märker endast
+applikationscontainern med `dockhand.update=true`. PostgreSQL är märkt med
+`dockhand.update=false` och ska uppdateras separat efter backup och kontroll av
+release notes.
+
+Aktivera `Settings` → `Environments` → miljön → `Updates` →
+`Enable scheduled update check` och `Automatically update containers` i
+Dockhand. När digesten bakom `:latest` ändras hämtar Dockhand imagen och
+återskapar applikationscontainern. `pull_policy: always` gör även manuella
+Compose-deployer deterministiska. Uppdateringen innebär ett kort driftstopp.
+
+Applikationen kör EF Core-migrationer innan HTTP-servern startar genom
+`Database__ApplyMigrations=true`. Detta upplägg förutsätter en enda
+applikationsinstans, vilket är Selmas nuvarande produktionsmodell. Om Selma
+senare skalas horisontellt ska migrationerna flyttas till ett separat,
+koordinerat deploysteg.
+
+Dockhand ska tillföra följande konfiguration vid start:
 
 - `OIDC_AUTHORITY`
 - `OIDC_CLIENT_ID`
@@ -37,7 +53,7 @@ Callback-sökvägen är `/signin-oidc`. `X-Forwarded-Proto` och `X-Forwarded-For
 
 ## Säkerhets- och acceptanskontroll
 
-- Kör EF-migrationen före den nya applikationsversionen. Migrationen tar bort gamla magic-link-rader och alla gamla sessioner men behåller användare och kalenderhistorik.
+- Kontrollera efter uppdatering att appcontainern är frisk och att startup-loggen visar en lyckad EF-migration. OIDC-migrationen tar bort gamla magic-link-rader och alla gamla sessioner men behåller användare och kalenderhistorik.
 - Kontrollera att reservadmin kan logga in och skapa den första OIDC-admininbjudan.
 - Kontrollera att ParentA/ParentB kan skapa föräldrainbjudningar men inte admininbjudningar.
 - Kontrollera att Google/Facebook visas på Widsell ID-sidan.

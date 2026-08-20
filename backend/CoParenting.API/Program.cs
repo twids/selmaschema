@@ -79,6 +79,12 @@ builder.Services.AddAuthentication(options =>
         {
             OnTokenValidated = context =>
             {
+                var issuer = context.SecurityToken?.Issuer;
+                if (!string.IsNullOrWhiteSpace(issuer) && context.Properties != null)
+                {
+                    context.Properties.Items[AuthSchemes.OidcIssuerProperty] = issuer;
+                }
+
                 var verified = context.Principal?.FindFirstValue("email_verified");
                 if (!bool.TryParse(verified, out var isVerified) || !isVerified)
                 {
