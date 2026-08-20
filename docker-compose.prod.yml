@@ -3,6 +3,8 @@ services:
   selmadb:
     image: postgres:16-alpine
     container_name: coparenting-db
+    labels:
+      - dockhand.update=false
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -18,26 +20,18 @@ services:
     networks:
       - coparenting-network
 
-  # EF Core migrations runner (one-shot)
-  migrator:
-    image: ${MIGRATOR_IMAGE}
-    container_name: coparenting-migrator
-    depends_on:
-      selmadb:
-        condition: service_healthy
-    networks:
-      - coparenting-network
-    restart: "no"
-    command: [ "--connection", "Host=selmadb;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}" ]
-
   # Combined Backend API + Frontend (prebuilt image)
   app:
-    image: ${APP_IMAGE}
+    image: ${APP_IMAGE:-ghcr.io/twids/selmaschema/coparenting-app:latest}
+    pull_policy: always
     container_name: coparenting-app
+    labels:
+      - dockhand.update=true
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=${ASPNETCORE_URLS}
       - ConnectionStrings__DefaultConnection=Host=selmadb;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
+      - Database__ApplyMigrations=true
       - Oidc__Authority=${OIDC_AUTHORITY}
       - Oidc__ClientId=${OIDC_CLIENT_ID}
       - Oidc__ClientSecret=${OIDC_CLIENT_SECRET}

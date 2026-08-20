@@ -14,26 +14,46 @@ Selma använder `id.widsell.nu` som en generell OpenID Connect-provider. Selma k
 
 Referenser: [OAuth2/OIDC provider](https://docs.goauthentik.io/add-secure-apps/providers/oauth2/), [federerade identitetsleverantörer](https://docs.goauthentik.io/users-sources/sources/social-logins/) och [Sources i login-flödet](https://docs.goauthentik.io/users-sources/sources/index.html#add-sources-to-default-login-page).
 
-## Deploykonfiguration
+## Produktionskonfiguration
 
-Följande GitHub Actions variables skickas vidare som Portainer stack-variabler:
+GitHub Actions bygger, testar och publicerar applikationsimagen till
+`ghcr.io/twids/selmaschema/coparenting-app:latest` efter varje lyckad push till
+`main`. Produktions-Compose använder denna flytande tagg och märker endast
+applikationscontainern med `dockhand.update=true`. PostgreSQL är märkt med
+`dockhand.update=false` och ska uppdateras separat efter backup och kontroll av
+release notes.
+
+Aktivera `Settings` → `Environments` → miljön → `Updates` →
+`Enable scheduled update check` och `Automatically update containers` i
+Dockhand. När digesten bakom `:latest` ändras hämtar Dockhand imagen och
+återskapar applikationscontainern. `pull_policy: always` gör även manuella
+Compose-deployer deterministiska. Uppdateringen innebär ett kort driftstopp.
+
+Applikationen kör EF Core-migrationer innan HTTP-servern startar genom
+`Database__ApplyMigrations=true`. Detta upplägg förutsätter en enda
+applikationsinstans, vilket är Selmas nuvarande produktionsmodell. Om Selma
+senare skalas horisontellt ska migrationerna flyttas till ett separat,
+koordinerat deploysteg.
+
+Dockhand ska tillföra följande konfiguration vid start:
 
 - `OIDC_AUTHORITY`
 - `OIDC_CLIENT_ID`
 - `LOCAL_ADMIN_ENABLED` (`true` endast när reservvägen ska vara aktiv)
 - `FORWARDED_HEADERS_KNOWN_NETWORK` (det betrodda proxy-/Docker-subnätet, i CIDR-form)
 
-Följande ska vara GitHub Actions secrets och skickas till Portainer utan att läggas i Git, Compose eller `appsettings` som värden:
+Följande värden är hemligheter och ska lagras i driftplattformens
+hemlighetshantering, aldrig som värden i Git, Compose eller `appsettings`:
 
 - `OIDC_CLIENT_SECRET`
 - `LOCAL_ADMIN_PASSWORD_HASH` (BCrypt, separat från alla OIDC-konton)
-- befintliga `POSTGRES_PASSWORD` och `PORTAINER_API_KEY`
+- `POSTGRES_PASSWORD`
 
 Callback-sökvägen är `/signin-oidc`. `X-Forwarded-Proto` och `X-Forwarded-For` accepteras bara från konfigurerade proxyadresser/nät; nginx måste skicka `X-Forwarded-Proto https`. Kontrollera efter deploy att redirect-parametern till Authentik är exakt `https://selma.widsell.nu/signin-oidc`.
 
 ## Säkerhets- och acceptanskontroll
 
-- Kör EF-migrationen före den nya applikationsversionen. Migrationen tar bort gamla magic-link-rader och alla gamla sessioner men behåller användare och kalenderhistorik.
+- Kontrollera efter uppdatering att appcontainern är frisk och att startup-loggen visar en lyckad EF-migration. OIDC-migrationen tar bort gamla magic-link-rader och alla gamla sessioner men behåller användare och kalenderhistorik.
 - Kontrollera att reservadmin kan logga in och skapa den första OIDC-admininbjudan.
 - Kontrollera att ParentA/ParentB kan skapa föräldrainbjudningar men inte admininbjudningar.
 - Kontrollera att Google/Facebook visas på Widsell ID-sidan.

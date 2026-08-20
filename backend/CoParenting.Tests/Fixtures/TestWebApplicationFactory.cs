@@ -131,7 +131,6 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             .Get(AuthSchemes.OidcTemporary);
         var claims = new[]
         {
-            new Claim("iss", "https://id.test"),
             new Claim("sub", subject),
             new Claim("email", email),
             new Claim("name", email),
@@ -141,6 +140,7 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         {
             ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(10)
         };
+        properties.Items[AuthSchemes.OidcIssuerProperty] = "https://id.test";
         properties.Items["invitation_id"] = invitationId.ToString();
         var ticket = new AuthenticationTicket(
             new ClaimsPrincipal(new ClaimsIdentity(claims, AuthSchemes.OidcTemporary)),

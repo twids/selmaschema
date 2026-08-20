@@ -152,6 +152,39 @@ public class AuthEndpointsTests : IDisposable
     }
 
     [Fact]
+    public async Task OidcCallback_UsesValidatedIssuerStoredInAuthenticationProperties()
+    {
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
+            context.Users.Add(new User
+            {
+                Email = "existing@test.se",
+                Role = "Admin",
+                DisplayName = "Existing",
+                CreatedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+        }
+
+        using var callbackClient = _factory.CreateOidcCallbackClient(
+            invitationId: 0,
+            email: "existing@test.se",
+            subject: "existing-subject");
+        var response = await callbackClient.GetAsync("/api/auth/oidc/complete?returnUrl=%2Fchange-requests");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        response.Headers.Location!.ToString().Should().Be("/change-requests");
+        response.Headers.GetValues("Set-Cookie").Should().Contain(v =>
+            v.StartsWith("__Host-selma-session="));
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
+        var identity = db.ExternalIdentities.Single(e => e.Subject == "existing-subject");
+        identity.Issuer.Should().Be("https://id.test");
+    }
+
+    [Fact]
     public async Task Logout_RevokesSessionAndClearsCookie()
     {
         await LoginAsAdminAsync();
