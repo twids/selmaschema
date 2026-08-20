@@ -44,7 +44,7 @@ public class StatisticsEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Act
         var response = await _client.GetAsync("/api/statistics/2026");
@@ -66,7 +66,7 @@ public class StatisticsEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Create various assignments
         await _client.PutAsJsonAsync("/api/days/2026/2/1", new UpdateDayAssignmentDto("A", false, null));
@@ -92,7 +92,7 @@ public class StatisticsEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Create assignments with VAB
         await _client.PutAsJsonAsync("/api/days/2026/3/1", new UpdateDayAssignmentDto("A", true, null));
@@ -116,7 +116,7 @@ public class StatisticsEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Create assignments
         var day1Response = await _client.PutAsJsonAsync("/api/days/2026/4/1", new UpdateDayAssignmentDto("A", false, null));
@@ -146,7 +146,7 @@ public class StatisticsEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Create assignments in different months
         await _client.PutAsJsonAsync("/api/days/2026/1/15", new UpdateDayAssignmentDto("A", false, null));
@@ -169,7 +169,7 @@ public class StatisticsEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Create assignments in 2026
         await _client.PutAsJsonAsync("/api/days/2026/5/1", new UpdateDayAssignmentDto("A", false, null));
@@ -200,7 +200,7 @@ public class StatisticsEndpointsTests : IDisposable
         // Arrange
         var tokenA = await LoginAsParentAAsync();
         var tokenB = await LoginAsParentBAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenA);
+        _client.SetSessionCookie(tokenA);
 
         // Create assignment
         var dayResponse = await _client.PutAsJsonAsync("/api/days/2026/6/15", new UpdateDayAssignmentDto("A", false, null));
@@ -210,11 +210,11 @@ public class StatisticsEndpointsTests : IDisposable
         await _client.PostAsJsonAsync($"/api/comments/{day!.Id}", new CreateCommentDto("Comment 1 from A"));
         await _client.PostAsJsonAsync($"/api/comments/{day.Id}", new CreateCommentDto("Comment 2 from A"));
 
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenB);
+        _client.SetSessionCookie(tokenB);
         await _client.PostAsJsonAsync($"/api/comments/{day.Id}", new CreateCommentDto("Comment from B"));
 
         // Act
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenA);
+        _client.SetSessionCookie(tokenA);
         var response = await _client.GetAsync("/api/statistics/2026");
 
         // Assert
@@ -227,7 +227,7 @@ public class StatisticsEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentBAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Act
         var response = await _client.GetAsync("/api/statistics/2026");
@@ -241,7 +241,7 @@ public class StatisticsEndpointsTests : IDisposable
     {
         // Arrange
         var adminToken = await LoginAsAdminAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+        _client.SetSessionCookie(adminToken);
 
         // Act
         var response = await _client.GetAsync("/api/statistics/2026");
@@ -255,7 +255,7 @@ public class StatisticsEndpointsTests : IDisposable
     {
         // Arrange
         var tokenA = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenA);
+        _client.SetSessionCookie(tokenA);
 
         // Create a complex scenario:
         // - 3 days for Parent A (1 with VAB, 1 with comment)
@@ -292,40 +292,17 @@ public class StatisticsEndpointsTests : IDisposable
 
     private async Task<string> LoginAsAdminAsync()
     {
-        var request = new AdminLoginRequest { Password = "admin123" };
-        var response = await _client.PostAsJsonAsync("/api/auth/admin/login", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        return await _factory.AuthenticateClientAsync(_client, "Admin", "admin@test.com");
     }
 
     private async Task<string> LoginAsParentAAsync()
     {
-        using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        var (success, magicToken) = await authService.CreateMagicLinkAsync(
-            "parenta@test.com",
-            "ParentA",
-            "Parent A Test");
-
-        var request = new MagicTokenRequest { Token = magicToken!.Token };
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        return await _factory.AuthenticateClientAsync(_client, "ParentA", "parenta@test.com");
     }
 
     private async Task<string> LoginAsParentBAsync()
     {
-        using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        var (success, magicToken) = await authService.CreateMagicLinkAsync(
-            "parentb@test.com",
-            "ParentB",
-            "Parent B Test");
-
-        var request = new MagicTokenRequest { Token = magicToken!.Token };
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        return await _factory.AuthenticateClientAsync(_client, "ParentB", "parentb@test.com");
     }
 
     private async Task<DayAssignmentDto> CreateDayAsync(string dateStr, string? parent, bool isVAB)

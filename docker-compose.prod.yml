@@ -38,7 +38,13 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
       - ASPNETCORE_URLS=${ASPNETCORE_URLS}
       - ConnectionStrings__DefaultConnection=Host=selmadb;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
-      - Auth__AdminPasswordHash=$$2b$$12$$13RAa8h9MJ2IaWfgRX5cSuwXS8iE.tmdWj2kW6J9Omy9nzi9K/7eK
+      - Oidc__Authority=${OIDC_AUTHORITY}
+      - Oidc__ClientId=${OIDC_CLIENT_ID}
+      - Oidc__ClientSecret=${OIDC_CLIENT_SECRET}
+      - Oidc__CallbackPath=${OIDC_CALLBACK_PATH:-/signin-oidc}
+      - Auth__LocalAdmin__Enabled=${LOCAL_ADMIN_ENABLED}
+      - Auth__LocalAdmin__PasswordHash=${LOCAL_ADMIN_PASSWORD_HASH}
+      - ForwardedHeaders__KnownNetworks__0=${FORWARDED_HEADERS_KNOWN_NETWORK}
     ports:
       - "3000:8080"
     depends_on:

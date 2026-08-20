@@ -1,10 +1,19 @@
 using CoParenting.Infrastructure.Data;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using System.Net.Http.Headers;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.Extensions.Options;
+using System.Security.Claims;
+using CoParenting.API.Authentication;
 
 namespace CoParenting.Tests.Fixtures;
 
@@ -30,8 +39,16 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
     /// </summary>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureLogging(logging =>
+        {
+            logging.ClearProviders();
+            logging.AddDebug();
+        });
+
         builder.ConfigureTestServices(services =>
         {
+            services.AddDataProtection().UseEphemeralDataProtectionProvider();
+
             // Remove the existing DbContext registration
             services.RemoveAll<DbContextOptions<CoParentingDbContext>>();
             services.RemoveAll<CoParentingDbContext>();
@@ -40,6 +57,18 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
             services.AddDbContext<CoParentingDbContext>(options =>
             {
                 options.UseInMemoryDatabase(_databaseName);
+            });
+
+            services.PostConfigure<OpenIdConnectOptions>(AuthSchemes.Oidc, options =>
+            {
+                options.Configuration = new OpenIdConnectConfiguration
+                {
+                    AuthorizationEndpoint = "https://id.test/authorize",
+                    TokenEndpoint = "https://id.test/token",
+                    Issuer = "https://id.test"
+                };
+                options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(
+                    options.Configuration);
             });
 
             // Ensure database is created
@@ -54,11 +83,26 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Auth:AdminPasswordHash"] = BCrypt.Net.BCrypt.HashPassword("admin123")
+                ["Auth:LocalAdmin:Enabled"] = "true",
+                ["Auth:LocalAdmin:PasswordHash"] = BCrypt.Net.BCrypt.HashPassword("admin123"),
+                ["Oidc:Authority"] = "https://id.test",
+                ["Oidc:ClientId"] = "selma-tests",
+                ["Oidc:ClientSecret"] = "test-secret",
+                ["Oidc:CallbackPath"] = "/signin-oidc"
             });
         });
 
         builder.UseEnvironment("Testing");
+    }
+
+    public new HttpClient CreateClient()
+    {
+        return base.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost"),
+            AllowAutoRedirect = false,
+            HandleCookies = true
+        });
     }
 
     /// <summary>
@@ -71,8 +115,41 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         var client = CreateClient();
 
         // Add session cookie
-        client.DefaultRequestHeaders.Add("Cookie", $"session_token={sessionToken}");
+        client.DefaultRequestHeaders.Add("Cookie", $"{AuthSchemes.SessionCookie}={sessionToken}");
 
+        return client;
+    }
+
+    public HttpClient CreateOidcCallbackClient(
+        int invitationId,
+        string email,
+        string subject,
+        bool emailVerified = true)
+    {
+        var cookieOptions = Services
+            .GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
+            .Get(AuthSchemes.OidcTemporary);
+        var claims = new[]
+        {
+            new Claim("iss", "https://id.test"),
+            new Claim("sub", subject),
+            new Claim("email", email),
+            new Claim("name", email),
+            new Claim("email_verified", emailVerified.ToString().ToLowerInvariant())
+        };
+        var properties = new AuthenticationProperties
+        {
+            ExpiresUtc = DateTimeOffset.UtcNow.AddMinutes(10)
+        };
+        properties.Items["invitation_id"] = invitationId.ToString();
+        var ticket = new AuthenticationTicket(
+            new ClaimsPrincipal(new ClaimsIdentity(claims, AuthSchemes.OidcTemporary)),
+            properties,
+            AuthSchemes.OidcTemporary);
+        var protectedTicket = cookieOptions.TicketDataFormat.Protect(ticket);
+
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Add("Cookie", $"{AuthSchemes.OidcCookie}={protectedTicket}");
         return client;
     }
 }

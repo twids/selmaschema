@@ -1,36 +1,23 @@
+using CoParenting.Application.Interfaces;
 using CoParenting.Application.Services;
 using CoParenting.Core.Entities;
 using CoParenting.Infrastructure.Data;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Moq;
-using Xunit;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CoParenting.Tests.Unit.Services;
 
 public class AuthServiceTests : IDisposable
 {
     private readonly CoParentingDbContext _context;
-    private readonly Mock<IConfiguration> _configurationMock;
-    private readonly Mock<ILogger<AuthService>> _loggerMock;
-    private readonly AuthService _authService;
+    private readonly AuthService _service;
 
     public AuthServiceTests()
     {
-        // Setup in-memory database
-        var options = new DbContextOptionsBuilder<CoParentingDbContext>()
-            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
-            .Options;
-        _context = new CoParentingDbContext(options);
-
-        // Setup mocks
-        _configurationMock = new Mock<IConfiguration>();
-        _loggerMock = new Mock<ILogger<AuthService>>();
-
-        // Create service
-        _authService = new AuthService(_context, _configurationMock.Object, _loggerMock.Object);
+        _context = CreateContext(Guid.NewGuid().ToString());
+        _service = CreateService(_context);
     }
 
     public void Dispose()
@@ -40,304 +27,240 @@ public class AuthServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateMagicLinkAsync_ShouldGenerateBase64UrlToken_WithoutPlusSlashEquals()
+    public void Tokens_AreUrlSafe_AndHashIsOneWay()
     {
-        // Arrange
-        var email = "parent@test.com";
-        var role = "ParentA";
-        var displayName = "Test Parent";
+        var raw = TokenService.GenerateToken();
+        var hash = TokenService.HashToken(raw);
 
-        // Act
-        var (success, token) = await _authService.CreateMagicLinkAsync(email, role, displayName);
-
-        // Assert
-        success.Should().BeTrue();
-        token.Should().NotBeNull();
-        token!.Token.Should().NotContain("+", "Base64URL should replace + with -");
-        token.Token.Should().NotContain("/", "Base64URL should replace / with _");
-        token.Token.Should().NotContain("=", "Base64URL should remove padding");
-        token.Token.Should().MatchRegex("^[A-Za-z0-9_-]+$", "Base64URL should only contain URL-safe characters");
+        raw.Should().MatchRegex("^[A-Za-z0-9_-]+$");
+        hash.Should().HaveLength(64);
+        hash.Should().NotBe(raw);
+        TokenService.HashToken(raw).Should().Be(hash);
     }
 
     [Fact]
-    public async Task CreateMagicLinkAsync_ShouldCreateTokenWithCorrectExpiry()
+    public async Task LocalAdminLogin_StoresOnlyHashedSession_ForThirtyDays()
     {
-        // Arrange
-        var email = "parent@test.com";
-        var role = "ParentB";
-        var displayName = "Test Parent B";
-        var beforeCreation = DateTime.UtcNow;
+        var result = await _service.ValidateAdminPasswordAsync("admin123");
 
-        // Act
-        var (success, token) = await _authService.CreateMagicLinkAsync(email, role, displayName);
+        result.Success.Should().BeTrue();
+        result.RawToken.Should().NotBeNullOrWhiteSpace();
+        result.User!.IsLocalAdmin.Should().BeTrue();
+        result.Session!.TokenHash.Should().Be(TokenService.HashToken(result.RawToken!));
+        result.Session.TokenHash.Should().NotBe(result.RawToken);
+        result.Session.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddDays(30), TimeSpan.FromSeconds(5));
+    }
 
-        // Assert
-        success.Should().BeTrue();
-        token.Should().NotBeNull();
-        token!.ExpiresAt.Should().BeCloseTo(beforeCreation.AddHours(24), TimeSpan.FromSeconds(5));
+    [Theory]
+    [InlineData("ParentA")]
+    [InlineData("ParentB")]
+    public async Task Parent_CanCreateParentInvitations(string invitedRole)
+    {
+        var creator = await AddUserAsync("creator@test.se", "ParentA");
+
+        var result = await _service.CreateInvitationAsync(creator.Id, creator.Role, invitedRole, null);
+
+        result.Success.Should().BeTrue();
+        result.RawToken.Should().NotBeNullOrWhiteSpace();
+        result.Invitation!.TokenHash.Should().Be(TokenService.HashToken(result.RawToken!));
+        result.Invitation.ExpiresAt.Should().BeCloseTo(DateTime.UtcNow.AddHours(24), TimeSpan.FromSeconds(5));
     }
 
     [Fact]
-    public async Task ValidateAdminPasswordAsync_AdminSession_ShouldUseBase64UrlToken()
+    public async Task Parent_CannotCreateAdminInvitation()
     {
-        // Arrange
-        var adminPasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123");
-        _configurationMock.Setup(c => c["Auth:AdminPasswordHash"]).Returns(adminPasswordHash);
+        var creator = await AddUserAsync("creator@test.se", "ParentA");
 
-        // Act
-        var (success, session, user) = await _authService.ValidateAdminPasswordAsync("admin123");
+        var result = await _service.CreateInvitationAsync(creator.Id, creator.Role, "Admin", null);
 
-        // Assert
-        success.Should().BeTrue();
-        session.Should().NotBeNull();
-        session!.Token.Should().NotContain("+");
-        session.Token.Should().NotContain("/");
-        session.Token.Should().NotContain("=");
-        session.Token.Should().MatchRegex("^[A-Za-z0-9_-]+$");
+        result.Success.Should().BeFalse();
+        _context.Invitations.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task ValidateAdminPasswordAsync_ShouldCreateSessionWith30DayExpiry()
+    public async Task DifferentVerifiedEmailThanHint_IsAllowedAfterConfirmation()
     {
-        // Arrange
-        var adminPasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123");
-        _configurationMock.Setup(c => c["Auth:AdminPasswordHash"]).Returns(adminPasswordHash);
-        var beforeCreation = DateTime.UtcNow;
+        var creator = await AddUserAsync("admin@test.se", "Admin");
+        var created = await _service.CreateInvitationAsync(creator.Id, creator.Role, "ParentA", "hint@test.se");
 
-        // Act
-        var (success, session, user) = await _authService.ValidateAdminPasswordAsync("admin123");
+        var result = await _service.CompleteInvitationAsync(
+            created.Invitation!.Id,
+            Login("actual@test.se", "subject-1"));
 
-        // Assert
-        success.Should().BeTrue();
-        session.Should().NotBeNull();
-        session!.ExpiresAt.Should().BeCloseTo(beforeCreation.AddDays(30), TimeSpan.FromSeconds(5));
+        result.Success.Should().BeTrue();
+        result.User!.Email.Should().Be("actual@test.se");
+        result.User.Role.Should().Be("ParentA");
+        created.Invitation.EmailHint.Should().Be("hint@test.se");
     }
 
     [Fact]
-    public async Task ExchangeMagicTokenAsync_ShouldCreateSessionWith90DayExpiry()
+    public async Task ExactVerifiedEmail_LinksExistingAccount_AndPreservesItsRole()
     {
-        // Arrange
-        // First create a magic link
-        var (createSuccess, magicToken) = await _authService.CreateMagicLinkAsync("parent@test.com", "ParentA", "Test Parent");
-        createSuccess.Should().BeTrue();
-        magicToken.Should().NotBeNull();
-        var beforeExchange = DateTime.UtcNow;
+        var creator = await AddUserAsync("admin@test.se", "Admin");
+        var existing = await AddUserAsync("existing@test.se", "ParentB");
+        var created = await _service.CreateInvitationAsync(creator.Id, creator.Role, "ParentA", null);
 
-        // Act
-        var (success, session, user, error) = await _authService.ExchangeMagicTokenAsync(magicToken!.Token);
+        var result = await _service.CompleteInvitationAsync(
+            created.Invitation!.Id,
+            Login(existing.Email, "subject-existing"));
 
-        // Assert
-        success.Should().BeTrue();
-        session.Should().NotBeNull();
-        session!.ExpiresAt.Should().BeCloseTo(beforeExchange.AddDays(90), TimeSpan.FromSeconds(5));
+        result.Success.Should().BeTrue();
+        result.User!.Id.Should().Be(existing.Id);
+        result.User.Role.Should().Be("ParentB");
+        (await _context.ExternalIdentities.SingleAsync()).UserId.Should().Be(existing.Id);
     }
 
     [Fact]
-    public async Task ExchangeMagicTokenAsync_Session_ShouldUseBase64UrlToken()
+    public async Task MissingOrUnverifiedEmail_DoesNotConsumeInvitation()
     {
-        // Arrange
-        var (createSuccess, magicToken) = await _authService.CreateMagicLinkAsync("parent@test.com", "ParentA", "Test Parent");
-        createSuccess.Should().BeTrue();
+        var creator = await AddUserAsync("admin@test.se", "Admin");
+        var created = await _service.CreateInvitationAsync(creator.Id, creator.Role, "ParentA", null);
 
-        // Act
-        var (success, session, user, error) = await _authService.ExchangeMagicTokenAsync(magicToken!.Token);
+        var result = await _service.CompleteInvitationAsync(
+            created.Invitation!.Id,
+            new ExternalLoginInfo("https://id.test", "sub", "user@test.se", "User", false));
 
-        // Assert
-        success.Should().BeTrue();
-        session.Should().NotBeNull();
-        session!.Token.Should().NotContain("+");
-        session!.Token.Should().NotContain("/");
-        session!.Token.Should().NotContain("=");
-        session.Token.Should().MatchRegex("^[A-Za-z0-9_-]+$");
+        result.Success.Should().BeFalse();
+        (await _context.Invitations.FindAsync(created.Invitation.Id))!.ConsumedAt.Should().BeNull();
     }
 
     [Fact]
-    public async Task ExchangeMagicTokenAsync_ShouldReturnError_WhenTokenAlreadyUsed()
+    public async Task LinkedIdentity_CannotUseInvitationToChangeRole()
     {
-        // Arrange
-        var (createSuccess, magicToken) = await _authService.CreateMagicLinkAsync("parent@test.com", "ParentA", "Test Parent");
-        await _authService.ExchangeMagicTokenAsync(magicToken!.Token); // Use it once
-
-        // Act
-        var (success, session, user, error) = await _authService.ExchangeMagicTokenAsync(magicToken.Token);
-
-        // Assert
-        success.Should().BeFalse();
-        error.Should().Be("Token already used");
-    }
-
-    [Fact]
-    public async Task ExchangeMagicTokenAsync_ShouldReturnError_WhenTokenExpired()
-    {
-        // Arrange
-        var user = new User
+        var creator = await AddUserAsync("admin@test.se", "Admin");
+        var user = await AddUserAsync("parent@test.se", "ParentB");
+        _context.ExternalIdentities.Add(new ExternalIdentity
         {
-            Email = "parent@test.com",
-            Role = "ParentA",
-            DisplayName = "Test Parent",
-            CreatedAt = DateTime.UtcNow
-        };
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        var expiredToken = new MagicLinkToken
-        {
-            Token = "expired-token",
             UserId = user.Id,
-            User = user,
-            CreatedAt = DateTime.UtcNow.AddHours(-25),
-            ExpiresAt = DateTime.UtcNow.AddHours(-1), // Expired 1 hour ago
-            IsUsed = false
-        };
-        _context.MagicLinkTokens.Add(expiredToken);
-        await _context.SaveChangesAsync();
-
-        // Act
-        var (success, session, _, error) = await _authService.ExchangeMagicTokenAsync(expiredToken.Token);
-
-        // Assert
-        success.Should().BeFalse();
-        error.Should().Be("Token expired");
-    }
-
-    [Fact]
-    public async Task ValidateAdminPasswordAsync_ShouldReturnFalse_WhenPasswordIncorrect()
-    {
-        // Arrange
-        var adminPasswordHash = BCrypt.Net.BCrypt.HashPassword("correct-password");
-        _configurationMock.Setup(c => c["Auth:AdminPasswordHash"]).Returns(adminPasswordHash);
-
-        // Act
-        var (success, session, user) = await _authService.ValidateAdminPasswordAsync("wrong-password");
-
-        // Assert
-        success.Should().BeFalse();
-        session.Should().BeNull();
-        user.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task CreateMagicLinkAsync_ShouldReturnFalse_WhenRoleInvalid()
-    {
-        // Arrange
-        var email = "parent@test.com";
-        var invalidRole = "InvalidRole";
-        var displayName = "Test Parent";
-
-        // Act
-        var (success, token) = await _authService.CreateMagicLinkAsync(email, invalidRole, displayName);
-
-        // Assert
-        success.Should().BeFalse();
-        token.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task ValidateSessionAsync_ShouldReturnTrue_WhenSessionValid()
-    {
-        // Arrange
-        var user = new User
-        {
-            Email = "parent@test.com",
-            Role = "ParentA",
-            DisplayName = "Test Parent",
-            CreatedAt = DateTime.UtcNow
-        };
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        var session = new Session
-        {
-            Token = "valid-session-token",
-            UserId = user.Id,
-            User = user,
+            Issuer = "https://id.test",
+            Subject = "linked-subject",
+            NormalizedIssuer = "https://id.test",
+            NormalizedSubject = "linked-subject",
             CreatedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(30),
-            IsActive = true
-        };
-        _context.Sessions.Add(session);
+            LastLoginAt = DateTime.UtcNow
+        });
         await _context.SaveChangesAsync();
+        var created = await _service.CreateInvitationAsync(creator.Id, creator.Role, "ParentA", null);
 
-        // Act
-        var (success, returnedUser) = await _authService.ValidateSessionAsync("valid-session-token");
+        var result = await _service.CompleteInvitationAsync(
+            created.Invitation!.Id,
+            Login(user.Email, "linked-subject"));
 
-        // Assert
-        success.Should().BeTrue();
-        returnedUser.Should().NotBeNull();
-        returnedUser!.Email.Should().Be("parent@test.com");
-        returnedUser.Role.Should().Be("ParentA");
+        result.Success.Should().BeFalse();
+        result.Error.Should().Contain("change role");
+        user.Role.Should().Be("ParentB");
+        (await _context.Invitations.FindAsync(created.Invitation.Id))!.ConsumedAt.Should().BeNull();
     }
 
     [Fact]
-    public async Task ValidateSessionAsync_ShouldReturnFalse_WhenSessionExpired()
+    public async Task NormalOidcLogin_RequiresLinkedIdentityOrExactExistingEmail()
     {
-        // Arrange
-        var user = new User
-        {
-            Email = "parent@test.com",
-            Role = "ParentA",
-            DisplayName = "Test Parent",
-            CreatedAt = DateTime.UtcNow
-        };
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
+        var denied = await _service.SignInExternalAsync(Login("unknown@test.se", "unknown"));
+        var existing = await AddUserAsync("known@test.se", "ParentA");
+        var linked = await _service.SignInExternalAsync(Login(existing.Email, "known"));
 
-        var expiredSession = new Session
+        denied.Success.Should().BeFalse();
+        denied.Error.Should().Be("Invitation required");
+        linked.Success.Should().BeTrue();
+        linked.User!.Id.Should().Be(existing.Id);
+    }
+
+    [Fact]
+    public async Task Invitation_IsSingleUse()
+    {
+        var creator = await AddUserAsync("admin@test.se", "Admin");
+        var created = await _service.CreateInvitationAsync(creator.Id, creator.Role, "ParentA", null);
+
+        var first = await _service.CompleteInvitationAsync(created.Invitation!.Id, Login("one@test.se", "one"));
+        var second = await _service.CompleteInvitationAsync(created.Invitation.Id, Login("two@test.se", "two"));
+
+        first.Success.Should().BeTrue();
+        second.Success.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ExpiredInvitation_IsRejected()
+    {
+        var creator = await AddUserAsync("admin@test.se", "Admin");
+        var invitation = new Invitation
         {
-            Token = "expired-session-token",
-            UserId = user.Id,
-            User = user,
-            CreatedAt = DateTime.UtcNow.AddDays(-31),
+            TokenHash = TokenService.HashToken("expired"),
+            Role = "ParentA",
+            CreatedByUserId = creator.Id,
+            CreatedAt = DateTime.UtcNow.AddDays(-2),
             ExpiresAt = DateTime.UtcNow.AddDays(-1),
-            IsActive = true
+            ConcurrencyToken = Guid.NewGuid()
         };
-        _context.Sessions.Add(expiredSession);
+        _context.Invitations.Add(invitation);
         await _context.SaveChangesAsync();
 
-        // Act
-        var (success, returnedUser) = await _authService.ValidateSessionAsync("expired-session-token");
+        var result = await _service.CompleteInvitationAsync(invitation.Id, Login("user@test.se", "expired"));
 
-        // Assert
-        success.Should().BeFalse();
-        returnedUser.Should().BeNull();
-
-        // Verify session was marked as inactive
-        var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Token == "expired-session-token");
-        session!.IsActive.Should().BeFalse();
+        result.Success.Should().BeFalse();
     }
 
     [Fact]
-    public async Task InvalidateSessionAsync_ShouldMarkSessionInactive()
+    public async Task ConcurrentRedemption_AllowsExactlyOneCompletion()
     {
-        // Arrange
+        var databaseName = Guid.NewGuid().ToString();
+        await using var setup = CreateContext(databaseName);
+        var creator = new User
+        {
+            Email = "admin@test.se",
+            Role = "Admin",
+            DisplayName = "Admin",
+            CreatedAt = DateTime.UtcNow
+        };
+        setup.Users.Add(creator);
+        await setup.SaveChangesAsync();
+        var setupService = CreateService(setup);
+        var created = await setupService.CreateInvitationAsync(creator.Id, creator.Role, "ParentA", null);
+
+        await using var firstContext = CreateContext(databaseName);
+        await using var secondContext = CreateContext(databaseName);
+        var tasks = new[]
+        {
+            CreateService(firstContext).CompleteInvitationAsync(created.Invitation!.Id, Login("one@test.se", "one")),
+            CreateService(secondContext).CompleteInvitationAsync(created.Invitation.Id, Login("two@test.se", "two"))
+        };
+
+        var results = await Task.WhenAll(tasks);
+        results.Count(r => r.Success).Should().Be(1);
+    }
+
+    private async Task<User> AddUserAsync(string email, string role)
+    {
         var user = new User
         {
-            Email = "parent@test.com",
-            Role = "ParentA",
-            DisplayName = "Test Parent",
+            Email = email,
+            Role = role,
+            DisplayName = email,
             CreatedAt = DateTime.UtcNow
         };
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+        return user;
+    }
 
-        var session = new Session
-        {
-            Token = "active-session-token",
-            UserId = user.Id,
-            User = user,
-            CreatedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(30),
-            IsActive = true
-        };
-        _context.Sessions.Add(session);
-        await _context.SaveChangesAsync();
+    private static ExternalLoginInfo Login(string email, string subject) =>
+        new("https://id.test", subject, email, email, true);
 
-        // Act
-        var success = await _authService.InvalidateSessionAsync("active-session-token");
+    private static CoParentingDbContext CreateContext(string databaseName)
+    {
+        return new CoParentingDbContext(new DbContextOptionsBuilder<CoParentingDbContext>()
+            .UseInMemoryDatabase(databaseName)
+            .Options);
+    }
 
-        // Assert
-        success.Should().BeTrue();
-        var updatedSession = await _context.Sessions.FirstOrDefaultAsync(s => s.Token == "active-session-token");
-        updatedSession!.IsActive.Should().BeFalse();
+    private static AuthService CreateService(CoParentingDbContext context)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Auth:LocalAdmin:Enabled"] = "true",
+                ["Auth:LocalAdmin:PasswordHash"] = BCrypt.Net.BCrypt.HashPassword("admin123")
+            })
+            .Build();
+        return new AuthService(context, configuration, NullLogger<AuthService>.Instance);
     }
 }

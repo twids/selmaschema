@@ -76,7 +76,6 @@ public record UserDto
 
 public record AuthResponse
 {
-    public string Token { get; init; } = string.Empty;
     public UserDto User { get; init; } = null!;
     public DateTime ExpiresAt { get; init; }
 }
@@ -86,27 +85,39 @@ public record AdminLoginRequest
     public string Password { get; init; } = string.Empty;
 }
 
-public record MagicTokenRequest
+public record CreateInvitationRequest
 {
-    public string Token { get; init; } = string.Empty;
+    public string? EmailHint { get; init; }
+    public string Role { get; init; } = string.Empty;
 }
 
-public record CreateMagicLinkRequest
+public record InvitationDto
 {
-    public string Email { get; init; } = string.Empty;
+    public int Id { get; init; }
+    public string? EmailHint { get; init; }
     public string Role { get; init; } = string.Empty;
-    public string DisplayName { get; init; } = string.Empty;
-}
-
-public record MagicLinkResponse
-{
-    public string Token { get; init; } = string.Empty;
-    public string MagicLink { get; init; } = string.Empty;
-    public string Email { get; init; } = string.Empty;
-    public string Role { get; init; } = string.Empty;
-    public string DisplayName { get; init; } = string.Empty;
+    public int CreatedByUserId { get; init; }
+    public string CreatedByName { get; init; } = string.Empty;
+    public DateTime CreatedAt { get; init; }
     public DateTime ExpiresAt { get; init; }
-    public DateTime? CreatedAt { get; init; }
+    public DateTime? ConsumedAt { get; init; }
+    public string Status { get; init; } = string.Empty;
+}
+
+public record CreatedInvitationDto
+{
+    public InvitationDto Invitation { get; init; } = null!;
+    public string InvitationUrl { get; init; } = string.Empty;
+}
+
+public record PendingInvitationDto
+{
+    public int InvitationId { get; init; }
+    public string? EmailHint { get; init; }
+    public string VerifiedEmail { get; init; } = string.Empty;
+    public string DisplayName { get; init; } = string.Empty;
+    public string Role { get; init; } = string.Empty;
+    public DateTime ExpiresAt { get; init; }
 }
 
 // Change Request DTOs

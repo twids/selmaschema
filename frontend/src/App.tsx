@@ -2,7 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './components/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
-import MagicLinkHandler from './pages/MagicLinkHandler';
+import InvitationConfirmPage from './pages/InvitationConfirmPage';
+import InvitationsPage from './pages/InvitationsPage';
 import CalendarPage from './components/CalendarPage';
 import AdminDashboard from './components/AdminDashboard';
 import { ChangeRequestsPage } from './pages/ChangeRequestsPage';
@@ -12,7 +13,7 @@ export default function App() {
     <Routes>
       {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/auth/magic" element={<MagicLinkHandler />} />
+      <Route path="/auth/invitation" element={<InvitationConfirmPage />} />
 
       {/* Protected routes with AppLayout */}
       <Route
@@ -34,6 +35,15 @@ export default function App() {
             <AppLayout>
               <ChangeRequestsPage />
             </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/invitations"
+        element={
+          <ProtectedRoute>
+            <AppLayout><InvitationsPage /></AppLayout>
           </ProtectedRoute>
         }
       />

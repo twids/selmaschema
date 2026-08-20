@@ -8,22 +8,9 @@ import type { UserDto } from "../api/admin";
 /* ---------- mocks ---------- */
 
 const mockGetUsers = vi.fn();
-const mockAuthHeader = vi.fn(() => ({ Authorization: "Bearer test-token" }));
 
 vi.mock("../api/admin", () => ({
   getUsers: (...args: unknown[]) => mockGetUsers(...args),
-}));
-
-vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => ({
-    authHeader: mockAuthHeader,
-    token: "test-token",
-    user: { id: 1, email: "admin@test.com", role: "Admin" },
-    isAuthenticated: true,
-    loginAdmin: vi.fn(),
-    exchangeMagicToken: vi.fn(),
-    logout: vi.fn(),
-  }),
 }));
 
 /* ---------- helpers ---------- */

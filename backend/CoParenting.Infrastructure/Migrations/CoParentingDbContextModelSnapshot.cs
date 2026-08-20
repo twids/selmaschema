@@ -215,7 +215,7 @@ namespace CoParenting.Infrastructure.Migrations
                     b.ToTable("DayAssignments", (string)null);
                 });
 
-            modelBuilder.Entity("CoParenting.Core.Entities.MagicLinkToken", b =>
+            modelBuilder.Entity("CoParenting.Core.Entities.ExternalIdentity", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -230,25 +230,33 @@ namespace CoParenting.Infrastructure.Migrations
                         .HasColumnName("createdat")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expiresat");
-
-                    b.Property<bool>("IsUsed")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("isused");
-
-                    b.Property<string>("Token")
+                    b.Property<string>("Issuer")
                         .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)")
-                        .HasColumnName("token");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("issuer");
 
-                    b.Property<DateTime?>("UsedAt")
+                    b.Property<DateTime>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("usedat");
+                        .HasColumnName("lastloginat");
+
+                    b.Property<string>("NormalizedIssuer")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("normalizedissuer");
+
+                    b.Property<string>("NormalizedSubject")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("normalizedsubject");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("subject");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer")
@@ -256,12 +264,77 @@ namespace CoParenting.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Token")
-                        .IsUnique();
-
                     b.HasIndex("UserId");
 
-                    b.ToTable("magiclinktokens", (string)null);
+                    b.HasIndex("NormalizedIssuer", "NormalizedSubject")
+                        .IsUnique();
+
+                    b.ToTable("externalidentities", (string)null);
+                });
+
+            modelBuilder.Entity("CoParenting.Core.Entities.Invitation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid>("ConcurrencyToken")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uuid")
+                        .HasColumnName("concurrencytoken");
+
+                    b.Property<DateTime?>("ConsumedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("consumedat");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("createdat")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("createdbyuserid");
+
+                    b.Property<string>("EmailHint")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("emailhint");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expiresat");
+
+                    b.Property<int?>("RedeemedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("redeemedbyuserid");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("role");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tokenhash");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("RedeemedByUserId");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("invitations", (string)null);
                 });
 
             modelBuilder.Entity("CoParenting.Core.Entities.Session", b =>
@@ -289,11 +362,11 @@ namespace CoParenting.Infrastructure.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("isactive");
 
-                    b.Property<string>("Token")
+                    b.Property<string>("TokenHash")
                         .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)")
-                        .HasColumnName("token");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tokenhash");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer")
@@ -301,7 +374,7 @@ namespace CoParenting.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Token")
+                    b.HasIndex("TokenHash")
                         .IsUnique();
 
                     b.HasIndex("UserId");
@@ -335,6 +408,12 @@ namespace CoParenting.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("email");
+
+                    b.Property<bool>("IsLocalAdmin")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("islocaladmin");
 
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
@@ -383,7 +462,7 @@ namespace CoParenting.Infrastructure.Migrations
                     b.Navigation("DayAssignment");
                 });
 
-            modelBuilder.Entity("CoParenting.Core.Entities.MagicLinkToken", b =>
+            modelBuilder.Entity("CoParenting.Core.Entities.ExternalIdentity", b =>
                 {
                     b.HasOne("CoParenting.Core.Entities.User", "User")
                         .WithMany()
@@ -392,6 +471,24 @@ namespace CoParenting.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("CoParenting.Core.Entities.Invitation", b =>
+                {
+                    b.HasOne("CoParenting.Core.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CoParenting.Core.Entities.User", "RedeemedByUser")
+                        .WithMany()
+                        .HasForeignKey("RedeemedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("RedeemedByUser");
                 });
 
             modelBuilder.Entity("CoParenting.Core.Entities.Session", b =>

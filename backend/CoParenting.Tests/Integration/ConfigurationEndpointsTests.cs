@@ -44,7 +44,7 @@ public class ConfigurationEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Act
         var response = await _client.GetAsync("/api/config/parent-names");
@@ -63,7 +63,7 @@ public class ConfigurationEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Set custom names first (overwrite seed data)
         var setDto = new ParentNamesDto("Alice", "Bob");
@@ -85,7 +85,7 @@ public class ConfigurationEndpointsTests : IDisposable
     {
         // Arrange
         var adminToken = await LoginAsAdminAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+        _client.SetSessionCookie(adminToken);
 
         // Act
         var response = await _client.GetAsync("/api/config/parent-names");
@@ -99,7 +99,7 @@ public class ConfigurationEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentBAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Act
         var response = await _client.GetAsync("/api/config/parent-names");
@@ -130,7 +130,7 @@ public class ConfigurationEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         var dto = new ParentNamesDto("Charlie", "Dana");
 
         // Act
@@ -149,7 +149,7 @@ public class ConfigurationEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         var dto = new ParentNamesDto("Emma", "Frank");
 
         // Act - Update
@@ -169,7 +169,7 @@ public class ConfigurationEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Set initial names
         await _client.PutAsJsonAsync("/api/config/parent-names", new ParentNamesDto("OldA", "OldB"));
@@ -189,7 +189,7 @@ public class ConfigurationEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         var longNameA = "Alexander Christopher Montgomery III";
         var longNameB = "Victoria Elizabeth Thompson-Smith";
         var dto = new ParentNamesDto(longNameA, longNameB);
@@ -209,7 +209,7 @@ public class ConfigurationEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         var dto = new ParentNamesDto("André-François", "Björk Åström");
 
         // Act
@@ -227,7 +227,7 @@ public class ConfigurationEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentBAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         var dto = new ParentNamesDto("Grace", "Henry");
 
         // Act
@@ -242,7 +242,7 @@ public class ConfigurationEndpointsTests : IDisposable
     {
         // Arrange
         var adminToken = await LoginAsAdminAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", adminToken);
+        _client.SetSessionCookie(adminToken);
         var dto = new ParentNamesDto("Ivan", "Julia");
 
         // Act
@@ -258,40 +258,17 @@ public class ConfigurationEndpointsTests : IDisposable
 
     private async Task<string> LoginAsAdminAsync()
     {
-        var request = new AdminLoginRequest { Password = "admin123" };
-        var response = await _client.PostAsJsonAsync("/api/auth/admin/login", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        return await _factory.AuthenticateClientAsync(_client, "Admin", "admin@test.com");
     }
 
     private async Task<string> LoginAsParentAAsync()
     {
-        using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        var (success, magicToken) = await authService.CreateMagicLinkAsync(
-            "parenta@test.com",
-            "ParentA",
-            "Parent A Test");
-
-        var request = new MagicTokenRequest { Token = magicToken!.Token };
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        return await _factory.AuthenticateClientAsync(_client, "ParentA", "parenta@test.com");
     }
 
     private async Task<string> LoginAsParentBAsync()
     {
-        using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        var (success, magicToken) = await authService.CreateMagicLinkAsync(
-            "parentb@test.com",
-            "ParentB",
-            "Parent B Test");
-
-        var request = new MagicTokenRequest { Token = magicToken!.Token };
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        return await _factory.AuthenticateClientAsync(_client, "ParentB", "parentb@test.com");
     }
 
     #endregion

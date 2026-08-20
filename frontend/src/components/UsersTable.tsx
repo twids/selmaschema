@@ -10,7 +10,6 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { useAuth } from "../auth/AuthContext";
 import { getUsers, type UserDto } from "../api/admin";
 
 interface UsersTableProps {
@@ -20,7 +19,6 @@ interface UsersTableProps {
 
 /** Table displaying all registered users. */
 export default function UsersTable({ refreshKey }: UsersTableProps) {
-  const { authHeader } = useAuth();
   const [users, setUsers] = useState<UserDto[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +26,7 @@ export default function UsersTable({ refreshKey }: UsersTableProps) {
     let cancelled = false;
     setLoading(true);
 
-    getUsers(authHeader)
+    getUsers()
       .then((data) => {
         if (!cancelled) setUsers(data);
       })
@@ -42,7 +40,7 @@ export default function UsersTable({ refreshKey }: UsersTableProps) {
     return () => {
       cancelled = true;
     };
-  }, [refreshKey, authHeader]);
+  }, [refreshKey]);
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString("sv-SE", {

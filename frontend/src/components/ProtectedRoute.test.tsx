@@ -10,13 +10,14 @@ const createMockAuthContext = (
   isAuthenticated: boolean,
   user: MockAuthContext['user'] = null
 ): MockAuthContext => ({
-  token: isAuthenticated ? 'mock-token' : null,
   user,
   isAuthenticated,
+  isLoading: false,
   loginAdmin: vi.fn(),
-  exchangeMagicToken: vi.fn(),
+  startOidcLogin: vi.fn(),
+  completeInvitation: vi.fn(),
   logout: vi.fn(),
-  authHeader: vi.fn(() => ({})),
+  refreshUser: vi.fn(),
 });
 
 const renderWithRouter = (
@@ -37,6 +38,18 @@ const renderWithRouter = (
 };
 
 describe('ProtectedRoute', () => {
+  it('shows a loading state while /me bootstrap is pending', () => {
+    const authContext = { ...createMockAuthContext(false), isLoading: true };
+
+    renderWithRouter(
+      <ProtectedRoute><div>Protected Content</div></ProtectedRoute>,
+      authContext,
+    );
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByText('Login Page')).not.toBeInTheDocument();
+  });
+
   it('should render children when user is authenticated', () => {
     const authContext = createMockAuthContext(true, {
       id: 1,

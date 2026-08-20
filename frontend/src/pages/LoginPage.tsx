@@ -1,113 +1,88 @@
-import { useState, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { type FormEvent, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
+  Alert,
   Box,
+  Button,
   Card,
   CardContent,
-  TextField,
-  Button,
-  Alert,
-  Typography,
   Container,
-} from '@mui/material';
-import { useAuth } from '../auth/AuthContext';
-import { sv } from '../i18n/sv';
+  Divider,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { useAuth } from "../auth/AuthContext";
+
+const oidcErrors: Record<string, string> = {
+  invitation_required: "Kontot saknar åtkomst till Selma. Be en användare om en inbjudan.",
+  oidc_failed: "Inloggningen med Widsell ID kunde inte slutföras.",
+};
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { loginAdmin } = useAuth();
-  const [password, setPassword] = useState('');
+  const [searchParams] = useSearchParams();
+  const { loginAdmin, startOidcLogin } = useAuth();
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const oidcError = searchParams.get("error");
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    
-    // Clear previous error
-    setError(null);
-    
-    // Validate password is not empty
-    if (!password.trim()) {
-      return;
-    }
-    
+  const submitAdmin = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!password.trim()) return;
     setLoading(true);
-    
-    try {
-      const success = await loginAdmin(password);
-      
-      if (success) {
-        navigate('/');
-      } else {
-        setError(sv.auth.invalidPassword);
-      }
-    } catch (err) {
-      setError(sv.auth.invalidPassword);
-    } finally {
-      setLoading(false);
+    setError(null);
+    if (await loginAdmin(password)) {
+      navigate("/", { replace: true });
+    } else {
+      setError("Ogiltigt administratörslösenord eller reservinloggningen är avstängd.");
     }
-  };
-
-  const handlePasswordChange = (newPassword: string) => {
-    setPassword(newPassword);
-    // Clear error when user starts typing again
-    if (error) {
-      setError(null);
-    }
+    setLoading(false);
   };
 
   return (
     <Container maxWidth="sm">
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-        }}
-      >
-        <Card sx={{ width: '100%', maxWidth: 420 }}>
+      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+        <Card sx={{ width: "100%", maxWidth: 440 }}>
           <CardContent sx={{ p: 4 }}>
-            <Typography variant="h4" component="h1" gutterBottom align="center">
-              {sv.auth.adminLogin}
-            </Typography>
+            <Typography variant="h4" component="h1" align="center" gutterBottom>Logga in i Selma</Typography>
+            {oidcError && <Alert severity="error" sx={{ mb: 2 }}>{oidcErrors[oidcError] || oidcErrors.oidc_failed}</Alert>}
+            <Button
+              variant="contained"
+              size="large"
+              fullWidth
+              onClick={() => startOidcLogin("/")}
+              sx={{ mt: 2, mb: 3 }}
+            >
+              Logga in med Widsell ID
+            </Button>
 
-            <Box component="form" onSubmit={handleSubmit} noValidate>
+            <Divider sx={{ mb: 2 }}>Reservväg</Divider>
+            <Typography variant="subtitle2" color="text.secondary">Lokal reservadmin</Typography>
+            <Box component="form" onSubmit={submitAdmin}>
               <TextField
-                id="password"
-                label={sv.auth.password}
+                label="Administratörslösenord"
                 type="password"
                 fullWidth
-                required
+                size="small"
                 value={password}
-                onChange={(e) => handlePasswordChange(e.target.value)}
-                margin="normal"
-                autoFocus
+                onChange={(event) => setPassword(event.target.value)}
                 autoComplete="current-password"
                 disabled={loading}
+                sx={{ mt: 1 }}
               />
-
-              {error && (
-                <Alert severity="error" sx={{ mt: 2 }}>
-                  {error}
-                </Alert>
-              )}
-
+              {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
               <Button
                 type="submit"
-                variant="contained"
+                variant="outlined"
+                size="small"
                 fullWidth
-                size="large"
                 disabled={loading || !password.trim()}
-                sx={{ mt: 3, mb: 2 }}
+                sx={{ mt: 2 }}
               >
-                {loading ? sv.auth.signingIn : sv.auth.signIn}
+                {loading ? "Loggar in…" : "Logga in som reservadmin"}
               </Button>
             </Box>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-              {sv.auth.parentsInfo}
-            </Typography>
           </CardContent>
         </Card>
       </Box>

@@ -1,154 +1,89 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { config, waitForFrontend, waitForAPI, cleanupTestData } from './helpers/test-utils';
 
-/**
- * Calendar Navigation and UI Tests
- * 
- * Tests the frontend calendar interface:
- * - Page loads correctly
- * - Month navigation works
- * - Year changes properly
- * - Calendar displays correctly
- */
+const monthNames = [
+  'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni',
+  'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December',
+];
+
+async function waitForCalendar(page: Page) {
+  await expect(page.getByRole('heading', { name: 'Kalender' })).toBeVisible();
+  await expect(page.locator('[data-testid^="day-cell-"]').first()).toBeVisible();
+}
 
 test.describe('Calendar Navigation', () => {
-  
   test.beforeAll(async () => {
-    // Wait for services to be ready
     await waitForAPI();
     await waitForFrontend();
   });
 
   test.beforeEach(async ({ page }) => {
-    // Navigate to the app
     await page.goto(config.baseURL);
-    // Wait for the calendar to load
-    await page.waitForSelector('.calendar-container', { timeout: config.defaultTimeout });
+    await waitForCalendar(page);
   });
 
   test.afterAll(async () => {
     await cleanupTestData();
   });
 
-  test('should load the application with header and controls', async ({ page }) => {
-    // Check for main UI elements
-    await expect(page.locator('h1')).toContainText('Co-Parenting Calendar');
-    
-    // Check for controls
-    await expect(page.locator('.controls-container')).toBeVisible();
-    
-    // Check for calendar
-    await expect(page.locator('.calendar-container')).toBeVisible();
+  test('should load the application with navigation and calendar controls', async ({ page }) => {
+    await expect(page.getByRole('link', { name: 'Kalender' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Byten' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Inbjudningar' })).toBeVisible();
+    await expect(page.locator('[aria-label="Månad"]')).toBeVisible();
+    await expect(page.locator('[aria-label="År"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Föregående månad' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Nästa månad' })).toBeVisible();
   });
 
-  test('should display current month by default', async ({ page }) => {
+  test('should display the current month and year by default', async ({ page }) => {
     const now = new Date();
-    const monthNames = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    const currentMonthName = monthNames[now.getMonth()];
-    
-    // Check that the current month is displayed
-    await expect(page.locator('.month-header')).toContainText(currentMonthName);
+    await expect(page.locator('[aria-label="Månad"]'))
+      .toHaveText(monthNames[now.getMonth()]);
+    await expect(page.locator('[aria-label="År"]'))
+      .toHaveText(String(now.getFullYear()));
   });
 
-  test('should navigate to next month', async ({ page }) => {
-    // Get initial month
-    const initialMonth = await page.locator('.month-header').textContent();
-    
-    // Click next month button
-    await page.click('button:has-text("→")');
-    
-    // Wait for the month to change
-    await page.waitForTimeout(500);
-    
-    // Verify month changed
-    const newMonth = await page.locator('.month-header').textContent();
-    expect(newMonth).not.toBe(initialMonth);
+  test('should navigate to the next and previous month', async ({ page }) => {
+    const monthSelect = page.locator('[aria-label="Månad"]');
+    const initialMonth = await monthSelect.textContent();
+
+    await page.getByRole('button', { name: 'Nästa månad' }).click();
+    await expect(monthSelect).not.toHaveText(initialMonth ?? '');
+
+    await page.getByRole('button', { name: 'Föregående månad' }).click();
+    await expect(monthSelect).toHaveText(initialMonth ?? '');
   });
 
-  test('should navigate to previous month', async ({ page }) => {
-    // Get initial month
-    const initialMonth = await page.locator('.month-header').textContent();
-    
-    // Click previous month button
-    await page.click('button:has-text("←")');
-    
-    // Wait for the month to change
-    await page.waitForTimeout(500);
-    
-    // Verify month changed
-    const newMonth = await page.locator('.month-header').textContent();
-    expect(newMonth).not.toBe(initialMonth);
+  test('should display every day in the selected month', async ({ page }) => {
+    const now = new Date();
+    const expectedDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    await expect(page.locator('[data-testid^="day-cell-"]')).toHaveCount(expectedDays);
   });
 
-  test('should display calendar grid with days', async ({ page }) => {
-    // Check for calendar grid
-    await expect(page.locator('.calendar-grid')).toBeVisible();
-    
-    // Check for day cells
-    const dayCells = page.locator('.day-cell');
-    const count = await dayCells.count();
-    expect(count).toBeGreaterThan(0);
-    expect(count).toBeLessThanOrEqual(31);
+  test('should display the legend and month actions', async ({ page }) => {
+    await expect(page.getByText('Parent A', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Parent B', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Ej tilldelad', { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Initiera månad' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Export' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Import' })).toBeVisible();
   });
 
-  test('should display legend with parent names', async ({ page }) => {
-    // Check for legend
-    await expect(page.locator('.legend-container')).toBeVisible();
-    
-    // Check for parent names in legend
-    const legendText = await page.locator('.legend-container').textContent();
-    expect(legendText).toBeTruthy();
-  });
+  test('should change year and month via selectors', async ({ page }) => {
+    const now = new Date();
+    const targetYear = String(now.getFullYear() + 1);
+    const targetMonthIndex = now.getMonth() === 5 ? 6 : 5;
+    const targetMonth = monthNames[targetMonthIndex];
 
-  test('should show month action buttons', async ({ page }) => {
-    // Look for month action buttons
-    const monthActions = page.locator('.month-actions');
-    await expect(monthActions).toBeVisible();
-    
-    // Check for initialize button
-    await expect(page.locator('button:has-text("Initialize with Defaults")')).toBeVisible();
-  });
+    const yearSelect = page.locator('[aria-label="År"]');
+    await yearSelect.getByRole('combobox').click();
+    await page.getByRole('option', { name: targetYear, exact: true }).click();
+    await expect(yearSelect).toHaveText(targetYear);
 
-  test('should change year via dropdown', async ({ page }) => {
-    // Find year selector
-    const yearSelect = page.locator('select[name="year"], select#year, .year-selector select');
-    
-    if (await yearSelect.count() > 0) {
-      const currentYear = await yearSelect.inputValue();
-      const newYear = String(Number(currentYear) + 1);
-      
-      // Select new year
-      await yearSelect.selectOption(newYear);
-      
-      // Wait for data to load
-      await page.waitForTimeout(500);
-      
-      // Verify year changed (check if the value stuck)
-      const updatedYear = await yearSelect.inputValue();
-      expect(updatedYear).toBe(newYear);
-    }
-  });
-
-  test('should change month via dropdown', async ({ page }) => {
-    // Find month selector
-    const monthSelect = page.locator('select[name="month"], select#month, .month-selector select');
-    
-    if (await monthSelect.count() > 0) {
-      const currentMonth = await monthSelect.inputValue();
-      
-      // Select a different month (use index 5 for June)
-      await monthSelect.selectOption('5');
-      
-      // Wait for data to load
-      await page.waitForTimeout(500);
-      
-      // Verify month changed
-      const updatedMonth = await monthSelect.inputValue();
-      expect(updatedMonth).not.toBe(currentMonth);
-      expect(updatedMonth).toBe('5');
-    }
+    const monthSelect = page.locator('[aria-label="Månad"]');
+    await monthSelect.getByRole('combobox').click();
+    await page.getByRole('option', { name: targetMonth, exact: true }).click();
+    await expect(monthSelect).toHaveText(targetMonth);
   });
 });

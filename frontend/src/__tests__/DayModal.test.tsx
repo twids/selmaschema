@@ -19,18 +19,6 @@ vi.mock('../context/ConfigContext', () => ({
   useConfig: () => mockUseConfig(),
 }));
 
-vi.mock('../auth/AuthContext', () => ({
-  useAuth: () => ({
-    authHeader: () => ({ Authorization: 'Bearer test-token' }),
-    token: 'test-token',
-    user: null,
-    isAuthenticated: true,
-    loginAdmin: vi.fn(),
-    exchangeMagicToken: vi.fn(),
-    logout: vi.fn(),
-  }),
-}));
-
 /* ---------- helpers ---------- */
 
 function renderWithTheme(ui: React.ReactElement) {

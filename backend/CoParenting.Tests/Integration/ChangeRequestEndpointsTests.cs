@@ -31,32 +31,12 @@ public class ChangeRequestEndpointsTests : IDisposable
 
     private async Task<string> LoginAsParentAAsync()
     {
-        using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        var (success, magicToken) = await authService.CreateMagicLinkAsync(
-            "parenta@test.com",
-            "ParentA",
-            "Parent A");
-
-        var request = new MagicTokenRequest { Token = magicToken!.Token };
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        return await _factory.AuthenticateClientAsync(_client, "ParentA", "parenta@test.com");
     }
 
     private async Task<string> LoginAsParentBAsync()
     {
-        using var scope = _factory.Services.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
-        var (success, magicToken) = await authService.CreateMagicLinkAsync(
-            "parentb@test.com",
-            "ParentB",
-            "Parent B");
-
-        var request = new MagicTokenRequest { Token = magicToken!.Token };
-        var response = await _client.PostAsJsonAsync("/api/auth/magic", request);
-        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        return authResponse!.Token;
+        return await _factory.AuthenticateClientAsync(_client, "ParentB", "parentb@test.com");
     }
 
     #region POST /api/change-requests Tests
@@ -66,7 +46,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         var dto = new CreateChangeRequestDto
         {
             Dates = new List<DateOnly> { new DateOnly(2025, 3, 15), new DateOnly(2025, 3, 16) },
@@ -108,7 +88,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         var dto = new CreateChangeRequestDto
         {
             Dates = new List<DateOnly>(),
@@ -127,7 +107,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         var dto = new CreateChangeRequestDto
         {
             Dates = new List<DateOnly> { new DateOnly(2025, 3, 15) },
@@ -151,7 +131,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
         var parentAUser = await context.Users.FirstAsync(u => u.Role == "ParentA");
@@ -183,7 +163,7 @@ public class ChangeRequestEndpointsTests : IDisposable
         // Arrange - Create Parent B first
         var tokenB = await LoginAsParentBAsync();
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
         var parentBUser = await context.Users.FirstAsync(u => u.Role == "ParentB");
@@ -228,7 +208,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
         var parentAUser = await context.Users.FirstAsync(u => u.Role == "ParentA");
@@ -284,7 +264,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         using var scope = _factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<CoParentingDbContext>();
         var parentAUser = await context.Users.FirstAsync(u => u.Role == "ParentA");
@@ -315,7 +295,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Act
         var response = await _client.GetAsync("/api/change-requests/999");
@@ -373,7 +353,7 @@ public class ChangeRequestEndpointsTests : IDisposable
             changeRequestId = changeRequest.Id;
         }
 
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenB); // Parent B reviews
+        _client.SetSessionCookie(tokenB); // Parent B reviews
         var reviewDto = new ReviewChangeRequestDto
         {
             Approved = true,
@@ -434,7 +414,7 @@ public class ChangeRequestEndpointsTests : IDisposable
             changeRequestId = changeRequest.Id;
         }
 
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenB);
+        _client.SetSessionCookie(tokenB);
         var reviewDto = new ReviewChangeRequestDto
         {
             Approved = false,
@@ -463,7 +443,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         var reviewDto = new ReviewChangeRequestDto { Approved = true };
 
         // Act
@@ -478,7 +458,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         int changeRequestId;
         using (var scope = _factory.Services.CreateScope())
         {
@@ -531,7 +511,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         int changeRequestId;
         using (var scope = _factory.Services.CreateScope())
         {
@@ -571,7 +551,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
 
         // Act
         var response = await _client.DeleteAsync("/api/change-requests/999");
@@ -605,7 +585,7 @@ public class ChangeRequestEndpointsTests : IDisposable
         }
 
         var tokenB = await LoginAsParentBAsync(); // Different user
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenB);
+        _client.SetSessionCookie(tokenB);
 
         // Act
         var response = await _client.DeleteAsync($"/api/change-requests/{changeRequestId}");
@@ -619,7 +599,7 @@ public class ChangeRequestEndpointsTests : IDisposable
     {
         // Arrange
         var token = await LoginAsParentAAsync();
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _client.SetSessionCookie(token);
         int changeRequestId;
         using (var scope = _factory.Services.CreateScope())
         {

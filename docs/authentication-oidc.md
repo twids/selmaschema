@@ -1,0 +1,43 @@
+# Widsell ID, OIDC och inbjudningar
+
+Selma använder `id.widsell.nu` som en generell OpenID Connect-provider. Selma känner inte till Authentik-specifika användare, grupper eller sociala leverantörer. Authentik autentiserar identiteten; Selma äger lokala användare, roller, inbjudningar och sessioner.
+
+## Authentik
+
+1. Skapa en OAuth2/OIDC provider och en application för Selma i Authentik.
+2. Använd Authorization Code-flödet. Selma skickar PKCE med `S256` och begär endast `openid profile email`.
+3. Registrera exakt redirect URI `https://selma.widsell.nu/signin-oidc`. Använd inte wildcard eller regex för denna klient.
+4. Sätt provider/application-sluggen och använd dess issuer/discovery-URL som `OIDC_AUTHORITY`, normalt `https://id.widsell.nu/application/o/<slug>/`.
+5. Säkerställ att ID-token eller user-info innehåller stabila `sub`, `email`, `name` och `email_verified`.
+6. `email_verified` måste vara boolean `true` och bygga på en faktiskt verifierad adress. Authentik-dokumentationen anger att claimen som standard är `false` från version 2025.10; använd därför en property mapping som läser ett verifieringsattribut eller annan betrodd källstatus, inte en mapping som blint returnerar `true`.
+7. Skapa Google, Facebook och andra alternativ som Sources i Authentik. Lägg dem i identification stage under `Flows and Stages` → standard authentication flow → identification stage → `Selected sources`. Alternativen visas då hos Widsell ID, inte i Selmas kod.
+
+Referenser: [OAuth2/OIDC provider](https://docs.goauthentik.io/add-secure-apps/providers/oauth2/), [federerade identitetsleverantörer](https://docs.goauthentik.io/users-sources/sources/social-logins/) och [Sources i login-flödet](https://docs.goauthentik.io/users-sources/sources/index.html#add-sources-to-default-login-page).
+
+## Deploykonfiguration
+
+Följande GitHub Actions variables skickas vidare som Portainer stack-variabler:
+
+- `OIDC_AUTHORITY`
+- `OIDC_CLIENT_ID`
+- `LOCAL_ADMIN_ENABLED` (`true` endast när reservvägen ska vara aktiv)
+- `FORWARDED_HEADERS_KNOWN_NETWORK` (det betrodda proxy-/Docker-subnätet, i CIDR-form)
+
+Följande ska vara GitHub Actions secrets och skickas till Portainer utan att läggas i Git, Compose eller `appsettings` som värden:
+
+- `OIDC_CLIENT_SECRET`
+- `LOCAL_ADMIN_PASSWORD_HASH` (BCrypt, separat från alla OIDC-konton)
+- befintliga `POSTGRES_PASSWORD` och `PORTAINER_API_KEY`
+
+Callback-sökvägen är `/signin-oidc`. `X-Forwarded-Proto` och `X-Forwarded-For` accepteras bara från konfigurerade proxyadresser/nät; nginx måste skicka `X-Forwarded-Proto https`. Kontrollera efter deploy att redirect-parametern till Authentik är exakt `https://selma.widsell.nu/signin-oidc`.
+
+## Säkerhets- och acceptanskontroll
+
+- Kör EF-migrationen före den nya applikationsversionen. Migrationen tar bort gamla magic-link-rader och alla gamla sessioner men behåller användare och kalenderhistorik.
+- Kontrollera att reservadmin kan logga in och skapa den första OIDC-admininbjudan.
+- Kontrollera att ParentA/ParentB kan skapa föräldrainbjudningar men inte admininbjudningar.
+- Kontrollera att Google/Facebook visas på Widsell ID-sidan.
+- Lös in en inbjudan med annan verifierad adress än e-postledtråden och kontrollera att båda visas före den uttryckliga bekräftelsen.
+- Försök använda samma länk igen; den ska nekas.
+- Kontrollera att `__Host-selma-session` har `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, saknar `Domain` och har högst 30 dagars absolut giltighet.
+- Kontrollera att utloggning återkallar Selma-sessionen utan att logga ut hela Widsell ID-sessionen.

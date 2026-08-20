@@ -1,29 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, act, waitFor } from "@testing-library/react";
 import { CalendarProvider, useCalendar } from "../context/CalendarContext";
-import { AuthContext } from "../auth/AuthContext";
 import type { MonthDataDto, DayAssignmentDto } from "../api/types";
 
 /* ---------- helpers ---------- */
 
-function mockAuthValue() {
-  return {
-    token: "test-token",
-    user: null,
-    isAuthenticated: true,
-    loginAdmin: vi.fn(),
-    exchangeMagicToken: vi.fn(),
-    logout: vi.fn(),
-    authHeader: () => ({ Authorization: "Bearer test-token" }),
-  };
-}
-
 function wrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthContext.Provider value={mockAuthValue()}>
-      <CalendarProvider>{children}</CalendarProvider>
-    </AuthContext.Provider>
-  );
+  return <CalendarProvider>{children}</CalendarProvider>;
 }
 
 /** A consumer component that exposes CalendarContext values for testing. */

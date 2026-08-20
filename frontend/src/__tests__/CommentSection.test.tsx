@@ -14,22 +14,6 @@ vi.mock("../api/comments", () => ({
   addComment: (...args: unknown[]) => mockAddComment(...args),
 }));
 
-/* ---------- mock auth ---------- */
-
-const mockAuthHeader = () => ({ Authorization: "Bearer test-token" });
-
-vi.mock("../auth/AuthContext", () => ({
-  useAuth: () => ({
-    authHeader: mockAuthHeader,
-    token: "test-token",
-    user: null,
-    isAuthenticated: true,
-    loginAdmin: vi.fn(),
-    exchangeMagicToken: vi.fn(),
-    logout: vi.fn(),
-  }),
-}));
-
 /* ---------- helpers ---------- */
 
 function renderWithTheme(ui: React.ReactElement) {
@@ -204,7 +188,6 @@ describe("CommentSection", () => {
         expect(mockAddComment).toHaveBeenCalledWith(
           10,
           { parent: "A", commentText: "New comment" },
-          mockAuthHeader,
         );
       });
     });
@@ -312,7 +295,6 @@ describe("CommentSection", () => {
         expect(mockAddComment).toHaveBeenCalledWith(
           10,
           { parent: "A", commentText: "Ctrl enter comment" },
-          mockAuthHeader,
         );
       });
     });
@@ -489,7 +471,6 @@ describe("CommentSection", () => {
         expect(mockAddComment).toHaveBeenCalledWith(
           10,
           { parent: "B", commentText: "B comment" },
-          mockAuthHeader,
         );
       });
     });

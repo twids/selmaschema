@@ -22,25 +22,12 @@ public class SessionAuthenticationHandler : AuthenticationHandler<Authentication
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        // Check for Authorization header
-        if (!Request.Headers.ContainsKey("Authorization"))
+        if (!Request.Cookies.TryGetValue(AuthSchemes.SessionCookie, out var token) ||
+            string.IsNullOrWhiteSpace(token))
         {
             return AuthenticateResult.NoResult();
         }
 
-        var authHeader = Request.Headers.Authorization.ToString();
-        if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-        {
-            return AuthenticateResult.NoResult();
-        }
-
-        var token = authHeader.Substring("Bearer ".Length).Trim();
-        if (string.IsNullOrEmpty(token))
-        {
-            return AuthenticateResult.Fail("Invalid token");
-        }
-
-        // Validate session
         var (success, user) = await _authService.ValidateSessionAsync(token);
         if (!success || user == null)
         {
