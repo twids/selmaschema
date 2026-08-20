@@ -39,7 +39,7 @@ export default function FamilySettingsPage() {
             <TextField label="Sida B" value={family.sideBLabel} onChange={(e) => setFamily({ ...family, sideBLabel: e.target.value })} />
             <TextField label="Tidszon" value={family.timeZoneId} onChange={(e) => setFamily({ ...family, timeZoneId: e.target.value })} />
           </Stack>
-          <FormControl><InputLabel>Detaljnivå vid byte</InputLabel><Select label="Detaljnivå vid byte" value={family.exchangeDetailLevel} onChange={(e) => setFamily({ ...family, exchangeDetailLevel: e.target.value as FamilyDto["exchangeDetailLevel"] })}>
+          <FormControl><InputLabel id="exchange-detail-level-label">Detaljnivå vid byte</InputLabel><Select labelId="exchange-detail-level-label" label="Detaljnivå vid byte" value={family.exchangeDetailLevel} onChange={(e) => setFamily({ ...family, exchangeDetailLevel: e.target.value as FamilyDto["exchangeDetailLevel"] })}>
             <MenuItem value="Day">Dag</MenuItem><MenuItem value="DayAndTime">Dag + tid</MenuItem><MenuItem value="DayTimeAndPlace">Dag + tid + plats</MenuItem>
           </Select></FormControl>
           <Button variant="contained" onClick={() => void familyApi.update(familyId, {
@@ -52,7 +52,7 @@ export default function FamilySettingsPage() {
         {children.filter((child) => child.isActive).map((child) => <Typography key={child.id}>{child.displayName} · {calendars.find((calendar) => calendar.id === child.calendarId)?.name ?? "ingen kalender"}</Typography>)}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mt: 2 }}>
           <TextField label="Visningsnamn" value={childName} onChange={(e) => setChildName(e.target.value)} />
-          <FormControl sx={{ minWidth: 200 }}><InputLabel>Kalender</InputLabel><Select label="Kalender" value={childCalendarId} onChange={(e) => setChildCalendarId(e.target.value)}>{calendars.map((calendar) => <MenuItem key={calendar.id} value={calendar.id}>{calendar.name}</MenuItem>)}</Select></FormControl>
+          <FormControl sx={{ minWidth: 200 }}><InputLabel id="child-calendar-label">Kalender</InputLabel><Select labelId="child-calendar-label" label="Kalender" value={childCalendarId} onChange={(e) => setChildCalendarId(e.target.value)}>{calendars.map((calendar) => <MenuItem key={calendar.id} value={calendar.id}>{calendar.name}</MenuItem>)}</Select></FormControl>
           <Button disabled={!childName.trim() || !childCalendarId} onClick={() => void familyApi.createChild(familyId, childName, childCalendarId).then(() => { setChildName(""); return reload(); })}>Lägg till barn</Button>
         </Stack>
       </CardContent></Card>

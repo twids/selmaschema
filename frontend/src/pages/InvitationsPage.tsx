@@ -27,8 +27,8 @@ export default function InvitationsPage() {
     {error && <Alert severity="error">{error}</Alert>}
     <Card><CardContent><Stack spacing={2}>
       <Typography>Varje inbjudan får både en magisk länk och en kort engångskod. Den gäller i sju dagar.</Typography>
-      <FormControl><InputLabel>Behörighet</InputLabel><Select label="Behörighet" value={permission} onChange={(e) => setPermission(e.target.value as "Editor" | "Viewer")}><MenuItem value="Editor">Kan redigera</MenuItem><MenuItem value="Viewer">Kan läsa</MenuItem></Select></FormControl>
-      <FormControl><InputLabel>Schemasida</InputLabel><Select label="Schemasida" value={side} onChange={(e) => setSide(e.target.value as ScheduleSide | "")}><MenuItem value="">Ingen</MenuItem><MenuItem value="A">Hem A</MenuItem><MenuItem value="B">Hem B</MenuItem></Select></FormControl>
+      <FormControl><InputLabel id="invitation-permission-label">Behörighet</InputLabel><Select labelId="invitation-permission-label" label="Behörighet" value={permission} onChange={(e) => setPermission(e.target.value as "Editor" | "Viewer")}><MenuItem value="Editor">Kan redigera</MenuItem><MenuItem value="Viewer">Kan läsa</MenuItem></Select></FormControl>
+      <FormControl><InputLabel id="invitation-side-label">Schemasida</InputLabel><Select labelId="invitation-side-label" label="Schemasida" value={side} onChange={(e) => setSide(e.target.value as ScheduleSide | "")}><MenuItem value="">Ingen</MenuItem><MenuItem value="A">Hem A</MenuItem><MenuItem value="B">Hem B</MenuItem></Select></FormControl>
       <TextField label="E-postledtråd (valfri)" value={emailHint} onChange={(e) => setEmailHint(e.target.value)} />
       <Button variant="contained" onClick={() => void create()}>Skapa inbjudan</Button>
     </Stack></CardContent></Card>
