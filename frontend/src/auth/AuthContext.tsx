@@ -1,116 +1,83 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { apiPost } from "../api/client";
 
-export type Role = "Admin" | "ParentA" | "ParentB";
+export type FamilyPermission = "Owner" | "Editor" | "Viewer";
+export type ScheduleSide = "A" | "B";
 
-export interface UserDto {
-  id: number;
+export interface AccountDto {
+  id: string;
   email: string;
-  role: Role;
-  displayName?: string | null;
-  lastLoginAt?: string | null;
+  displayName: string;
 }
 
-interface AuthResponse {
-  user: UserDto;
-  expiresAt: string;
+export interface MembershipSummaryDto {
+  familyId: string;
+  familyName: string;
+  permission: FamilyPermission;
+  side: ScheduleSide | null;
+  status: "Active" | "Suspended";
+}
+
+export interface AuthMeDto {
+  account: AccountDto;
+  memberships: MembershipSummaryDto[];
 }
 
 interface AuthContextValue {
-  user: UserDto | null;
+  account: AccountDto | null;
+  memberships: MembershipSummaryDto[];
   isAuthenticated: boolean;
   isLoading: boolean;
-  loginAdmin: (password: string) => Promise<boolean>;
   startOidcLogin: (returnUrl?: string) => void;
-  completeInvitation: () => Promise<boolean>;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+const apiBase = import.meta.env.VITE_API_URL || "";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserDto | null>(null);
+  const [me, setMe] = useState<AuthMeDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshUser = useCallback(async () => {
+  const refresh = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        credentials: "include",
-      });
-      setUser(response.ok ? ((await response.json()) as UserDto) : null);
+      const response = await fetch(`${apiBase}/api/auth/me`, { credentials: "include" });
+      setMe(response.ok ? ((await response.json()) as AuthMeDto) : null);
     } catch {
-      setUser(null);
+      setMe(null);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void refreshUser();
-  }, [refreshUser]);
-
-  const loginAdmin = useCallback(async (password: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/admin/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-        credentials: "include",
-      });
-      if (!response.ok) return false;
-      const data = (await response.json()) as AuthResponse;
-      setUser(data.user);
-      return true;
-    } catch {
-      return false;
-    }
-  }, []);
+    void refresh();
+  }, [refresh]);
 
   const startOidcLogin = useCallback((returnUrl = "/") => {
-    const target = `${API_BASE_URL}/api/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`;
-    window.location.assign(target);
-  }, []);
-
-  const completeInvitation = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/invitations/complete`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!response.ok) return false;
-      const data = (await response.json()) as AuthResponse;
-      setUser(data.user);
-      return true;
-    } catch {
-      return false;
-    }
+    window.location.assign(`${apiBase}/api/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`);
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      await fetch(`${API_BASE_URL}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
+      await apiPost<void>("/api/auth/logout");
     } finally {
-      setUser(null);
+      setMe(null);
     }
   }, []);
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        isAuthenticated: user !== null,
+        account: me?.account ?? null,
+        memberships: me?.memberships ?? [],
+        isAuthenticated: me !== null,
         isLoading,
-        loginAdmin,
         startOidcLogin,
-        completeInvitation,
         logout,
-        refreshUser,
+        refresh,
       }}
     >
       {children}

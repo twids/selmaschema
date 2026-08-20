@@ -1,17 +1,14 @@
 #!/bin/bash
 
-# Script to generate BCrypt hash for admin password
-# Usage: ./generate-admin-password.sh <password>
-
-if [ -z "$1" ]; then
-    echo "Usage: ./generate-admin-password.sh <password>"
-    echo "Example: ./generate-admin-password.sh MySecurePassword123"
-    exit 1
-fi
+# Generate a BCrypt hash for the separate break-glass administrator.
+# The password is read without echo and is never placed in the process arguments.
 
 # Use Python to generate BCrypt hash (if bcrypt is installed)
 if command -v python3 &> /dev/null; then
-    python3 -c "import bcrypt; print(bcrypt.hashpw('$1'.encode(), bcrypt.gensalt()).decode())"
+    IFS= read -r -s -p "Break-glass password: " break_glass_password
+    echo ""
+    printf '%s' "$break_glass_password" | python3 -c 'import bcrypt, sys; print(bcrypt.hashpw(sys.stdin.buffer.read(), bcrypt.gensalt(rounds=12)).decode())'
+    unset break_glass_password
 else
     echo "Python3 is required to generate password hash"
     echo "Install bcrypt: pip3 install bcrypt"
@@ -19,4 +16,4 @@ else
 fi
 
 echo ""
-echo "Add this hash to appsettings.Development.json under Auth:AdminPasswordHash"
+echo "Store this as BREAK_GLASS_ADMIN_PASSWORD_HASH (Auth:BreakGlass:PasswordHash)."

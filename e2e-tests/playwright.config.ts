@@ -11,7 +11,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = process.env.BASE_URL || 'http://localhost:3000';
 const apiURL = process.env.API_URL || 'http://localhost:8080';
-const authFile = 'test-results/.auth/admin.json';
+const authFile = 'test-results/.auth/account.json';
 
 export default defineConfig({
   testDir: './tests',

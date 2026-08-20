@@ -1,90 +1,50 @@
-import { AppBar, Toolbar, Typography, Button, Container, Box } from '@mui/material';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
+import { AppBar, Box, Button, Container, FormControl, MenuItem, Select, Toolbar, Typography } from "@mui/material";
+import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
-interface AppLayoutProps {
-  children: React.ReactNode;
-}
-
-export default function AppLayout({ children }: AppLayoutProps) {
-  const { isAuthenticated, user, logout } = useAuth();
+export default function AppLayout({ children }: { children?: React.ReactNode }) {
+  const { account, memberships, logout } = useAuth();
+  const { familyId } = useParams();
+  const navigate = useNavigate();
   const location = useLocation();
+  const current = memberships.find((membership) => membership.familyId === familyId);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Co-Parenting Kalender
-          </Typography>
-          {isAuthenticated && user && (
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
+      <AppBar position="static" elevation={0}>
+        <Toolbar sx={{ gap: 2 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>Selma</Typography>
+          {memberships.length > 0 && (
+            <FormControl size="small" sx={{ minWidth: 190, bgcolor: "background.paper", borderRadius: 1 }}>
+              <Select
+                value={familyId ?? ""}
+                displayEmpty
+                aria-label="Välj familj"
+                onChange={(event) => navigate(`/families/${event.target.value}`)}
+              >
+                {memberships.map((membership) => (
+                  <MenuItem key={membership.familyId} value={membership.familyId}>{membership.familyName}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+          <Box sx={{ flex: 1 }} />
+          {familyId && (
             <>
-              <Button
-                component={Link}
-                to="/"
-                color="inherit"
-                sx={{
-                  mr: 1,
-                  borderBottom: location.pathname === '/' ? 2 : 0,
-                  borderRadius: 0,
-                }}
-                data-testid="nav-calendar"
-              >
-                Kalender
-              </Button>
-              <Button
-                component={Link}
-                to="/change-requests"
-                color="inherit"
-                sx={{
-                  mr: 2,
-                  borderBottom: location.pathname === '/change-requests' ? 2 : 0,
-                  borderRadius: 0,
-                }}
-                data-testid="nav-change-requests"
-              >
-                Byten
-              </Button>
-              <Button
-                component={Link}
-                to="/invitations"
-                color="inherit"
-                sx={{
-                  mr: 2,
-                  borderBottom: location.pathname === '/invitations' ? 2 : 0,
-                  borderRadius: 0,
-                }}
-                data-testid="nav-invitations"
-              >
-                Inbjudningar
-              </Button>
-              {user.role === 'Admin' && (
-                <Button
-                  component={Link}
-                  to="/admin"
-                  color="inherit"
-                  sx={{
-                    mr: 2,
-                    borderBottom: location.pathname === '/admin' ? 2 : 0,
-                    borderRadius: 0,
-                  }}
-                  data-testid="nav-admin"
-                >
-                  Admin
-                </Button>
+              <Button color="inherit" component={Link} to={`/families/${familyId}`}>Översikt</Button>
+              <Button color="inherit" component={Link} to={`/families/${familyId}/invitations`}>Bjud in</Button>
+              <Button color="inherit" component={Link} to={`/families/${familyId}/change-requests`}>Byten</Button>
+              {current?.permission === "Owner" && (
+                <Button color="inherit" component={Link} to={`/families/${familyId}/settings`}>Inställningar</Button>
               )}
-              <Typography variant="body1" sx={{ mr: 2 }}>
-                {user.displayName || user.email}
-              </Typography>
-              <Button color="inherit" onClick={() => void logout()}>
-                Logga ut
-              </Button>
             </>
           )}
+          <Typography variant="body2">{account?.displayName || account?.email}</Typography>
+          <Button color="inherit" onClick={() => void logout()}>Logga ut</Button>
         </Toolbar>
       </AppBar>
-      <Container component="main" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
-        {children}
+      <Container component="main" maxWidth="lg" sx={{ py: 4 }} data-path={location.pathname}>
+        {children ?? <Outlet />}
       </Container>
     </Box>
   );
