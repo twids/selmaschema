@@ -218,14 +218,18 @@ namespace CoParenting.Infrastructure.Migrations
                 oldType: "timestamp with time zone",
                 oldDefaultValueSql: "CURRENT_TIMESTAMP");
 
-            migrationBuilder.AlterColumn<Guid>(
+            // The clean v2 reset has already emptied these retained legacy tables. PostgreSQL
+            // cannot cast integer identity columns directly to uuid, so recreate the key
+            // columns after their primary keys and foreign keys have been removed.
+            migrationBuilder.DropColumn(
+                name: "Id",
+                table: "comments");
+
+            migrationBuilder.AddColumn<Guid>(
                 name: "Id",
                 table: "comments",
                 type: "uuid",
-                nullable: false,
-                oldClrType: typeof(int),
-                oldType: "integer")
-                .OldAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                nullable: false);
 
             migrationBuilder.AddColumn<Guid>(
                 name: "AuthorMemberId",
@@ -272,14 +276,15 @@ namespace CoParenting.Infrastructure.Migrations
                 oldType: "timestamp with time zone",
                 oldDefaultValueSql: "CURRENT_TIMESTAMP");
 
-            migrationBuilder.AlterColumn<Guid>(
+            migrationBuilder.DropColumn(
+                name: "Id",
+                table: "external_identities");
+
+            migrationBuilder.AddColumn<Guid>(
                 name: "Id",
                 table: "external_identities",
                 type: "uuid",
-                nullable: false,
-                oldClrType: typeof(int),
-                oldType: "integer")
-                .OldAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                nullable: false);
 
             migrationBuilder.AddColumn<Guid>(
                 name: "AccountId",
@@ -307,14 +312,15 @@ namespace CoParenting.Infrastructure.Migrations
                 oldType: "timestamp with time zone",
                 oldDefaultValueSql: "CURRENT_TIMESTAMP");
 
-            migrationBuilder.AlterColumn<Guid>(
+            migrationBuilder.DropColumn(
+                name: "Id",
+                table: "change_requests");
+
+            migrationBuilder.AddColumn<Guid>(
                 name: "Id",
                 table: "change_requests",
                 type: "uuid",
-                nullable: false,
-                oldClrType: typeof(int),
-                oldType: "integer")
-                .OldAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+                nullable: false);
 
             migrationBuilder.AddColumn<Guid>(
                 name: "CalendarId",
@@ -1200,13 +1206,15 @@ namespace CoParenting.Infrastructure.Migrations
                 oldClrType: typeof(DateTime),
                 oldType: "timestamp with time zone");
 
-            migrationBuilder.AlterColumn<int>(
+            migrationBuilder.DropColumn(
+                name: "Id",
+                table: "Comments");
+
+            migrationBuilder.AddColumn<int>(
                 name: "Id",
                 table: "Comments",
                 type: "integer",
-                nullable: false,
-                oldClrType: typeof(Guid),
-                oldType: "uuid")
+                nullable: false)
                 .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
             migrationBuilder.AddColumn<string>(
@@ -1241,13 +1249,15 @@ namespace CoParenting.Infrastructure.Migrations
                 oldClrType: typeof(DateTime),
                 oldType: "timestamp with time zone");
 
-            migrationBuilder.AlterColumn<int>(
+            migrationBuilder.DropColumn(
+                name: "id",
+                table: "externalidentities");
+
+            migrationBuilder.AddColumn<int>(
                 name: "id",
                 table: "externalidentities",
                 type: "integer",
-                nullable: false,
-                oldClrType: typeof(Guid),
-                oldType: "uuid")
+                nullable: false)
                 .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
             migrationBuilder.AddColumn<int>(
@@ -1276,13 +1286,15 @@ namespace CoParenting.Infrastructure.Migrations
                 oldClrType: typeof(DateTime),
                 oldType: "timestamp with time zone");
 
-            migrationBuilder.AlterColumn<int>(
+            migrationBuilder.DropColumn(
+                name: "id",
+                table: "changerequests");
+
+            migrationBuilder.AddColumn<int>(
                 name: "id",
                 table: "changerequests",
                 type: "integer",
-                nullable: false,
-                oldClrType: typeof(Guid),
-                oldType: "uuid")
+                nullable: false)
                 .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
             migrationBuilder.AddColumn<string>(
