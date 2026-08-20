@@ -14,20 +14,24 @@ Selma använder `id.widsell.nu` som en generell OpenID Connect-provider. Selma k
 
 Referenser: [OAuth2/OIDC provider](https://docs.goauthentik.io/add-secure-apps/providers/oauth2/), [federerade identitetsleverantörer](https://docs.goauthentik.io/users-sources/sources/social-logins/) och [Sources i login-flödet](https://docs.goauthentik.io/users-sources/sources/index.html#add-sources-to-default-login-page).
 
-## Deploykonfiguration
+## Produktionskonfiguration
 
-Följande GitHub Actions variables skickas vidare som Portainer stack-variabler:
+GitHub Actions bygger, testar och publicerar applikationsimagen till
+`ghcr.io/twids/selmaschema/coparenting-app`. Repositoryt utför ingen automatisk
+deploy till en driftmiljö. Driftplattformen ska själv hämta imagen och tillföra
+följande konfiguration vid start:
 
 - `OIDC_AUTHORITY`
 - `OIDC_CLIENT_ID`
 - `LOCAL_ADMIN_ENABLED` (`true` endast när reservvägen ska vara aktiv)
 - `FORWARDED_HEADERS_KNOWN_NETWORK` (det betrodda proxy-/Docker-subnätet, i CIDR-form)
 
-Följande ska vara GitHub Actions secrets och skickas till Portainer utan att läggas i Git, Compose eller `appsettings` som värden:
+Följande värden är hemligheter och ska lagras i driftplattformens
+hemlighetshantering, aldrig som värden i Git, Compose eller `appsettings`:
 
 - `OIDC_CLIENT_SECRET`
 - `LOCAL_ADMIN_PASSWORD_HASH` (BCrypt, separat från alla OIDC-konton)
-- befintliga `POSTGRES_PASSWORD` och `PORTAINER_API_KEY`
+- `POSTGRES_PASSWORD`
 
 Callback-sökvägen är `/signin-oidc`. `X-Forwarded-Proto` och `X-Forwarded-For` accepteras bara från konfigurerade proxyadresser/nät; nginx måste skicka `X-Forwarded-Proto https`. Kontrollera efter deploy att redirect-parametern till Authentik är exakt `https://selma.widsell.nu/signin-oidc`.
 
