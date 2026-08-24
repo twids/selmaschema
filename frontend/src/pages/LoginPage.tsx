@@ -1,4 +1,5 @@
-import { Alert, Box, Button, Card, CardContent, Container, Typography } from "@mui/material";
+import { Alert, Box, Button, CircularProgress, Container, Typography } from "@mui/material";
+import { useEffect, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
@@ -7,28 +8,32 @@ export default function LoginPage() {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/";
+  const hasError = query.has("error");
+  const redirectStarted = useRef(false);
+
+  useEffect(() => {
+    if (isLoading || isAuthenticated || hasError || redirectStarted.current) return;
+    redirectStarted.current = true;
+    startOidcLogin(from);
+  }, [from, hasError, isAuthenticated, isLoading, startOidcLogin]);
 
   if (!isLoading && isAuthenticated) return <Navigate to={from} replace />;
 
   return (
     <Container maxWidth="sm" sx={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-      <Card sx={{ width: "100%" }}>
-        <CardContent sx={{ p: 5 }}>
-          <Typography variant="h3" fontWeight={700} gutterBottom>Selma</Typography>
-          <Typography color="text.secondary" sx={{ mb: 4 }}>
-            Boendescheman som fungerar för hela familjen.
-          </Typography>
-          {query.get("error") && <Alert severity="error" sx={{ mb: 2 }}>Inloggningen kunde inte slutföras.</Alert>}
+      {hasError ? (
+        <Box sx={{ width: "100%" }}>
+          <Alert severity="error" sx={{ mb: 2 }}>Inloggningen kunde inte slutföras.</Alert>
           <Button fullWidth size="large" variant="contained" onClick={() => startOidcLogin(from)}>
-            Logga in med Widsell ID
+            Försök igen
           </Button>
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="body2" color="text.secondary">
-              Första gången skapas ett konto automatiskt. Därefter väljer du att skapa en familj eller gå med i en befintlig.
-            </Typography>
-          </Box>
-        </CardContent>
-      </Card>
+        </Box>
+      ) : (
+        <Box sx={{ display: "grid", justifyItems: "center", gap: 2 }}>
+          <CircularProgress />
+          <Typography color="text.secondary">Skickar dig till Widsell ID…</Typography>
+        </Box>
+      )}
     </Container>
   );
 }
