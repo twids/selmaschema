@@ -23,16 +23,23 @@ services:
       dockerfile: Dockerfile
     container_name: coparenting-e2e-app
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=EndToEnd
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=selmadb;Database=${POSTGRES_DB:-CoParentingCalendar};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-e2e-postgres-password}
       - Database__ApplyMigrations=true
+      - Database__AllowDestructiveV2Reset=true
       - Oidc__Authority=${OIDC_AUTHORITY:-https://id.example.test}
       - Oidc__ClientId=${OIDC_CLIENT_ID:-selma-e2e}
       - Oidc__ClientSecret=${OIDC_CLIENT_SECRET:-e2e-not-a-secret}
       - Oidc__CallbackPath=/signin-oidc
-      - Auth__LocalAdmin__Enabled=${LOCAL_ADMIN_ENABLED:-false}
-      - Auth__LocalAdmin__PasswordHash=${LOCAL_ADMIN_PASSWORD_HASH:-disabled}
+      - AdminOidc__Authority=${ADMIN_OIDC_AUTHORITY:-https://id.example.test}
+      - AdminOidc__ClientId=${ADMIN_OIDC_CLIENT_ID:-selma-admin-e2e}
+      - AdminOidc__ClientSecret=${ADMIN_OIDC_CLIENT_SECRET:-e2e-not-a-secret}
+      - AdminOidc__CallbackPath=/signin-oidc-admin
+      - AdminOidc__RequiredGroup=selma-platform-admins
+      - Auth__BreakGlass__Enabled=true
+      - Auth__BreakGlass__PasswordHash=${BREAK_GLASS_ADMIN_PASSWORD_HASH}
+      - EndToEnd__LoginSecret=${E2E_LOGIN_SECRET:-e2e-login-secret}
       - ForwardedHeaders__KnownNetworks__0=172.16.0.0/12
     ports:
       - "3000:8080"

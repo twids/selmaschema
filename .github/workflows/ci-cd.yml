@@ -38,12 +38,12 @@ jobs:
     - name: Lint frontend
       run: |
         cd frontend
-        npm run lint || echo "Linting completed with warnings"
+        npm run lint
         
     - name: Run frontend tests
       run: |
         cd frontend
-        npm test -- run
+        npm run test:run
         
     - name: Build frontend
       run: |
@@ -57,19 +57,13 @@ jobs:
     
     # Build backend
     - name: Restore backend dependencies
-      run: |
-        cd backend/CoParenting.API
-        dotnet restore
+      run: dotnet restore selmaschema.sln
         
     - name: Build backend
-      run: |
-        cd backend/CoParenting.API
-        dotnet build --configuration Release --no-restore
+      run: dotnet build selmaschema.sln --configuration Release --no-restore
         
     - name: Run backend tests
-      run: |
-        cd backend
-        dotnet test --configuration Release --no-build --verbosity normal || echo "No tests found yet"
+      run: dotnet test selmaschema.sln --configuration Release --no-build --verbosity normal
         
     - name: Publish application
       run: |

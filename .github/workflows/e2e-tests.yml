@@ -18,7 +18,7 @@ jobs:
       OIDC_AUTHORITY: https://id.example.test
       OIDC_CLIENT_ID: selma-e2e
       OIDC_CLIENT_SECRET: e2e-not-a-secret
-      LOCAL_ADMIN_ENABLED: true
+      E2E_LOGIN_SECRET: e2e-login-secret
       E2E_ADMIN_PASSWORD: e2e-admin-password
     
     # Limit permissions for security
@@ -46,11 +46,11 @@ jobs:
         cd e2e-tests
         npx playwright install --with-deps chromium
 
-    - name: Generate test-only local admin hash
+    - name: Generate test-only break-glass hash
       run: |
         hash="$(docker run --rm httpd:2.4-alpine htpasswd -bnBC 12 "" "$E2E_ADMIN_PASSWORD" | sed 's/^://' | tr -d '\r\n')"
         echo "::add-mask::$hash"
-        echo "LOCAL_ADMIN_PASSWORD_HASH=$hash" >> "$GITHUB_ENV"
+        echo "BREAK_GLASS_ADMIN_PASSWORD_HASH=$hash" >> "$GITHUB_ENV"
     
     - name: Start database service
       run: |

@@ -1,46 +1,44 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
 import { AuthContext } from "../auth/AuthContext";
 import LoginPage from "./LoginPage";
 
-const loginAdmin = vi.fn();
-const startOidcLogin = vi.fn();
+const auth = {
+  account: null,
+  memberships: [],
+  isAuthenticated: false,
+  isLoading: false,
+  startOidcLogin: vi.fn(),
+  logout: async () => undefined,
+  refresh: async () => undefined,
+};
 
-function renderPage() {
-  return render(
-    <MemoryRouter>
-      <AuthContext.Provider value={{
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        loginAdmin,
-        startOidcLogin,
-        completeInvitation: vi.fn(),
-        logout: vi.fn(),
-        refreshUser: vi.fn(),
-      }}>
-        <LoginPage />
+function renderLogin(path = "/login", from = "/") {
+  auth.startOidcLogin.mockClear();
+  render(
+    <MemoryRouter initialEntries={[{ pathname: path.split("?")[0], search: path.includes("?") ? `?${path.split("?")[1]}` : "", state: { from: { pathname: from } } }]}>
+      <AuthContext.Provider value={auth}>
+        <Routes><Route path="/login" element={<LoginPage />} /></Routes>
       </AuthContext.Provider>
     </MemoryRouter>,
   );
 }
 
 describe("LoginPage", () => {
-  beforeEach(() => vi.clearAllMocks());
+  it("starts OIDC automatically after auth bootstrap", async () => {
+    renderLogin("/login", "/families/family-1");
 
-  it("starts OIDC from the primary Widsell ID button", () => {
-    renderPage();
-    fireEvent.click(screen.getByRole("button", { name: "Logga in med Widsell ID" }));
-    expect(startOidcLogin).toHaveBeenCalledWith("/");
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+    await waitFor(() => expect(auth.startOidcLogin).toHaveBeenCalledOnce());
+    expect(auth.startOidcLogin).toHaveBeenCalledWith("/families/family-1");
   });
 
-  it("keeps local admin as a secondary reserve form", async () => {
-    loginAdmin.mockResolvedValue(false);
-    renderPage();
-    fireEvent.change(screen.getByLabelText("Administratörslösenord"), { target: { value: "wrong" } });
-    fireEvent.click(screen.getByRole("button", { name: "Logga in som reservadmin" }));
-    await waitFor(() => expect(loginAdmin).toHaveBeenCalledWith("wrong"));
-    expect(await screen.findByText(/Ogiltigt administratörslösenord/)).toBeInTheDocument();
+  it("shows a retry action instead of creating a redirect loop after an error", () => {
+    renderLogin("/login?error=oidc");
+
+    expect(auth.startOidcLogin).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Försök igen" }));
+    expect(auth.startOidcLogin).toHaveBeenCalledWith("/");
   });
 });

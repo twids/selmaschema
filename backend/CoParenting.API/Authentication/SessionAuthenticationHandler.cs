@@ -6,47 +6,33 @@ using Microsoft.Extensions.Options;
 
 namespace CoParenting.API.Authentication;
 
-public class SessionAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+public sealed class SessionAuthenticationHandler(
+    IOptionsMonitor<AuthenticationSchemeOptions> options,
+    ILoggerFactory logger,
+    UrlEncoder encoder,
+    IAuthService authService) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
-    private readonly IAuthService _authService;
-
-    public SessionAuthenticationHandler(
-        IOptionsMonitor<AuthenticationSchemeOptions> options,
-        ILoggerFactory logger,
-        UrlEncoder encoder,
-        IAuthService authService)
-        : base(options, logger, encoder)
-    {
-        _authService = authService;
-    }
-
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (!Request.Cookies.TryGetValue(AuthSchemes.SessionCookie, out var token) ||
-            string.IsNullOrWhiteSpace(token))
+        if (!Request.Cookies.TryGetValue(AuthSchemes.AccountSessionCookie, out var token) || string.IsNullOrWhiteSpace(token))
         {
             return AuthenticateResult.NoResult();
         }
 
-        var (success, user) = await _authService.ValidateSessionAsync(token);
-        if (!success || user == null)
+        var (success, account, session) = await authService.ValidateAccountSessionAsync(token);
+        if (!success || account == null || session == null)
         {
-            return AuthenticateResult.Fail("Invalid or expired session");
+            return AuthenticateResult.Fail("Invalid or expired account session");
         }
 
-        // Create claims
-        var claims = new List<Claim>
+        var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, user.Role),
-            new Claim(ClaimTypes.Name, user.DisplayName ?? user.Email)
+            new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
+            new Claim(ClaimTypes.Email, account.Email),
+            new Claim(ClaimTypes.Name, account.DisplayName),
+            new Claim("selma_session_expires", session.ExpiresAt.ToString("O"))
         };
-
-        var identity = new ClaimsIdentity(claims, Scheme.Name);
-        var principal = new ClaimsPrincipal(identity);
-        var ticket = new AuthenticationTicket(principal, Scheme.Name);
-
-        return AuthenticateResult.Success(ticket);
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme.Name));
+        return AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme.Name));
     }
 }

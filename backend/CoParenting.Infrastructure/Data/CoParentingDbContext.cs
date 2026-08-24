@@ -3,199 +3,232 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CoParenting.Infrastructure.Data;
 
-/// <summary>
-/// Entity Framework DbContext for the Co-Parenting Calendar application
-/// </summary>
-public class CoParentingDbContext : DbContext
+public class CoParentingDbContext(DbContextOptions<CoParentingDbContext> options) : DbContext(options)
 {
-    public CoParentingDbContext(DbContextOptions<CoParentingDbContext> options)
-        : base(options)
-    {
-    }
-
-    public DbSet<DayAssignment> DayAssignments { get; set; }
-    public DbSet<Comment> Comments { get; set; }
-    public DbSet<Configuration> Configurations { get; set; }
-    public DbSet<User> Users { get; set; }
-    public DbSet<Session> Sessions { get; set; }
-    public DbSet<ExternalIdentity> ExternalIdentities { get; set; }
-    public DbSet<Invitation> Invitations { get; set; }
-    public DbSet<ChangeRequest> ChangeRequests { get; set; }
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<ExternalIdentity> ExternalIdentities => Set<ExternalIdentity>();
+    public DbSet<AccountSession> AccountSessions => Set<AccountSession>();
+    public DbSet<PlatformAdminSession> PlatformAdminSessions => Set<PlatformAdminSession>();
+    public DbSet<Family> Families => Set<Family>();
+    public DbSet<FamilyMember> FamilyMembers => Set<FamilyMember>();
+    public DbSet<Child> Children => Set<Child>();
+    public DbSet<ResidenceCalendar> ResidenceCalendars => Set<ResidenceCalendar>();
+    public DbSet<ScheduleVersion> ScheduleVersions => Set<ScheduleVersion>();
+    public DbSet<DayOverride> DayOverrides => Set<DayOverride>();
+    public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<ChangeRequest> ChangeRequests => Set<ChangeRequest>();
+    public DbSet<FamilyInvitation> FamilyInvitations => Set<FamilyInvitation>();
+    public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
-
-        // DayAssignment configuration
-        modelBuilder.Entity<DayAssignment>(entity =>
+        modelBuilder.Entity<Account>(entity =>
         {
-            entity.ToTable("DayAssignments");
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Date).IsUnique();
-            entity.Property(e => e.Date).HasColumnType("date");
-            entity.Property(e => e.Parent).HasMaxLength(1);
-            entity.Property(e => e.SpecialStatus).HasMaxLength(50);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-            // Relationship to Comments
-            entity.HasMany(e => e.Comments)
-                .WithOne(c => c.DayAssignment)
-                .HasForeignKey(c => c.DayAssignmentId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // Comment configuration
-        modelBuilder.Entity<Comment>(entity =>
-        {
-            entity.ToTable("Comments");
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.DayAssignmentId);
-            entity.HasIndex(e => e.Parent);
-            entity.Property(e => e.Parent).HasMaxLength(1).IsRequired();
-            entity.Property(e => e.CommentText).HasMaxLength(1000).IsRequired();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-        });
-
-        // Configuration configuration
-        modelBuilder.Entity<Configuration>(entity =>
-        {
-            entity.ToTable("Configurations");
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Key).IsUnique();
-            entity.Property(e => e.Key).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Value).HasMaxLength(500).IsRequired();
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-        });
-
-        // Seed default configuration
-        modelBuilder.Entity<Configuration>().HasData(
-            new Configuration
-            {
-                Id = 1,
-                Key = "ParentAName",
-                Value = "Tomas",
-                CreatedAt = new DateTime(2026, 2, 8, 18, 37, 6, 87, DateTimeKind.Utc).AddTicks(8927)
-            },
-            new Configuration
-            {
-                Id = 2,
-                Key = "ParentBName",
-                Value = "Carro",
-                CreatedAt = new DateTime(2026, 2, 8, 18, 37, 6, 87, DateTimeKind.Utc).AddTicks(8929)
-            }
-        );
-
-        // User configuration
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.ToTable("users");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255).IsRequired();
-            entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(50).IsRequired();
-            entity.Property(e => e.DisplayName).HasColumnName("displayname").HasMaxLength(255).IsRequired();
-            entity.Property(e => e.CreatedAt).HasColumnName("createdat").HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.LastLoginAt).HasColumnName("lastloginat");
-            entity.Property(e => e.IsLocalAdmin).HasColumnName("islocaladmin").HasDefaultValue(false);
-            entity.HasIndex(e => e.Email).IsUnique();
-        });
-
-        // Session configuration
-        modelBuilder.Entity<Session>(entity =>
-        {
-            entity.ToTable("sessions");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.TokenHash).HasColumnName("tokenhash").HasMaxLength(64).IsRequired();
-            entity.Property(e => e.UserId).HasColumnName("userid");
-            entity.Property(e => e.CreatedAt).HasColumnName("createdat").HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.ExpiresAt).HasColumnName("expiresat");
-            entity.Property(e => e.IsActive).HasColumnName("isactive").HasDefaultValue(true);
-            entity.HasIndex(e => e.TokenHash).IsUnique();
-            entity.HasIndex(e => e.UserId);
-
-            entity.HasOne(e => e.User)
-                .WithMany()
-                .HasForeignKey(e => e.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.ToTable("accounts");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Email).HasMaxLength(320).IsRequired();
+            entity.Property(x => x.NormalizedEmail).HasMaxLength(320).IsRequired();
+            entity.Property(x => x.DisplayName).HasMaxLength(200).IsRequired();
+            entity.HasIndex(x => x.NormalizedEmail).IsUnique();
         });
 
         modelBuilder.Entity<ExternalIdentity>(entity =>
         {
-            entity.ToTable("externalidentities");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.UserId).HasColumnName("userid");
-            entity.Property(e => e.Issuer).HasColumnName("issuer").HasMaxLength(500).IsRequired();
-            entity.Property(e => e.Subject).HasColumnName("subject").HasMaxLength(500).IsRequired();
-            entity.Property(e => e.NormalizedIssuer).HasColumnName("normalizedissuer").HasMaxLength(500).IsRequired();
-            entity.Property(e => e.NormalizedSubject).HasColumnName("normalizedsubject").HasMaxLength(500).IsRequired();
-            entity.Property(e => e.CreatedAt).HasColumnName("createdat").HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.LastLoginAt).HasColumnName("lastloginat");
-            entity.HasIndex(e => new { e.NormalizedIssuer, e.NormalizedSubject }).IsUnique();
-            entity.HasIndex(e => e.UserId);
+            entity.ToTable("external_identities");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Issuer).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.Subject).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.NormalizedIssuer).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.NormalizedSubject).HasMaxLength(500).IsRequired();
+            entity.HasIndex(x => new { x.NormalizedIssuer, x.NormalizedSubject }).IsUnique();
+            entity.HasOne(x => x.Account).WithMany(x => x.ExternalIdentities)
+                .HasForeignKey(x => x.AccountId).OnDelete(DeleteBehavior.Cascade);
+        });
 
-            entity.HasOne(e => e.User)
-                .WithMany()
-                .HasForeignKey(e => e.UserId)
+        modelBuilder.Entity<AccountSession>(entity =>
+        {
+            entity.ToTable("account_sessions");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.CsrfTokenHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(x => x.TokenHash).IsUnique();
+            entity.HasIndex(x => new { x.AccountId, x.RevokedAt, x.ExpiresAt });
+            entity.HasOne(x => x.Account).WithMany().HasForeignKey(x => x.AccountId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<Invitation>(entity =>
+        modelBuilder.Entity<PlatformAdminSession>(entity =>
         {
-            entity.ToTable("invitations");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.TokenHash).HasColumnName("tokenhash").HasMaxLength(64).IsRequired();
-            entity.Property(e => e.EmailHint).HasColumnName("emailhint").HasMaxLength(255);
-            entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(50).IsRequired();
-            entity.Property(e => e.CreatedByUserId).HasColumnName("createdbyuserid");
-            entity.Property(e => e.CreatedAt).HasColumnName("createdat").HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.ExpiresAt).HasColumnName("expiresat");
-            entity.Property(e => e.RedeemedByUserId).HasColumnName("redeemedbyuserid");
-            entity.Property(e => e.ConsumedAt).HasColumnName("consumedat");
-            entity.Property(e => e.ConcurrencyToken).HasColumnName("concurrencytoken").IsConcurrencyToken();
-            entity.HasIndex(e => e.TokenHash).IsUnique();
-            entity.HasIndex(e => e.CreatedByUserId);
+            entity.ToTable("platform_admin_sessions");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Subject).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.Email).HasMaxLength(320).IsRequired();
+            entity.Property(x => x.DisplayName).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.AuthenticationMethod).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.TokenHash).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.CsrfTokenHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(x => x.TokenHash).IsUnique();
+            entity.HasIndex(x => new { x.AccountId, x.RevokedAt, x.ExpiresAt });
+            entity.HasOne(x => x.Account).WithMany().HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
-            entity.HasOne(e => e.CreatedByUser)
-                .WithMany()
-                .HasForeignKey(e => e.CreatedByUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<Family>(entity =>
+        {
+            entity.ToTable("families");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            entity.Property(x => x.TimeZoneId).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.SideALabel).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.SideBLabel).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.ExchangeDetailLevel).HasConversion<string>().HasMaxLength(30);
+            entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(x => x.Status);
+        });
 
-            entity.HasOne(e => e.RedeemedByUser)
-                .WithMany()
-                .HasForeignKey(e => e.RedeemedByUserId)
+        modelBuilder.Entity<FamilyMember>(entity =>
+        {
+            entity.ToTable("family_members");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Permission).HasConversion<string>().HasMaxLength(20);
+            entity.Property(x => x.Side).HasConversion<string>().HasMaxLength(1);
+            entity.Property(x => x.ConcurrencyToken).IsConcurrencyToken();
+            entity.HasIndex(x => new { x.FamilyId, x.AccountId }).IsUnique();
+            entity.HasIndex(x => x.FamilyId)
+                .IsUnique()
+                .HasFilter("\"IsActive\" = TRUE AND \"Permission\" = 'Owner'");
+            entity.HasOne(x => x.Family).WithMany(x => x.Members).HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Account).WithMany(x => x.Memberships).HasForeignKey(x => x.AccountId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ResidenceCalendar>(entity =>
+        {
+            entity.ToTable("residence_calendars");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            entity.HasIndex(x => new { x.FamilyId, x.Name }).IsUnique();
+            entity.HasOne(x => x.Family).WithMany(x => x.Calendars).HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Child>(entity =>
+        {
+            entity.ToTable("children");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.DisplayName).HasMaxLength(100).IsRequired();
+            entity.HasIndex(x => new { x.FamilyId, x.IsActive });
+            entity.HasOne(x => x.Family).WithMany().HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.ResidenceCalendar).WithMany(x => x.Children)
+                .HasForeignKey(x => x.ResidenceCalendarId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<ScheduleVersion>(entity =>
+        {
+            entity.ToTable("schedule_versions");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.EffectiveFrom).HasColumnType("date");
+            entity.Property(x => x.AnchorDate).HasColumnType("date");
+            entity.Property(x => x.AnchorSide).HasConversion<string>().HasMaxLength(1);
+            entity.Property(x => x.Template).HasConversion<string>().HasMaxLength(50);
+            entity.Property(x => x.ParametersJson).HasColumnType("jsonb").IsRequired();
+            entity.Property(x => x.ChangeoverTime).HasColumnType("time");
+            entity.Property(x => x.ChangeoverPlace).HasMaxLength(200);
+            entity.HasIndex(x => new { x.CalendarId, x.EffectiveFrom }).IsUnique();
+            entity.HasOne(x => x.Family).WithMany().HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Calendar).WithMany(x => x.ScheduleVersions)
+                .HasForeignKey(x => x.CalendarId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.CreatedByMember).WithMany().HasForeignKey(x => x.CreatedByMemberId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // ChangeRequest configuration
+        modelBuilder.Entity<DayOverride>(entity =>
+        {
+            entity.ToTable("day_overrides");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Date).HasColumnType("date");
+            entity.Property(x => x.Side).HasConversion<string>().HasMaxLength(1);
+            entity.Property(x => x.SpecialStatus).HasMaxLength(80);
+            entity.Property(x => x.ChangeoverTime).HasColumnType("time");
+            entity.Property(x => x.ChangeoverPlace).HasMaxLength(200);
+            entity.HasIndex(x => new { x.CalendarId, x.Date }).IsUnique();
+            entity.HasOne(x => x.Family).WithMany().HasForeignKey(x => x.FamilyId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Calendar).WithMany().HasForeignKey(x => x.CalendarId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.UpdatedByMember).WithMany().HasForeignKey(x => x.UpdatedByMemberId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Comment>(entity =>
+        {
+            entity.ToTable("comments");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Date).HasColumnType("date");
+            entity.Property(x => x.Text).HasMaxLength(2000).IsRequired();
+            entity.HasIndex(x => new { x.CalendarId, x.Date });
+            entity.HasOne(x => x.Family).WithMany().HasForeignKey(x => x.FamilyId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Calendar).WithMany().HasForeignKey(x => x.CalendarId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.AuthorMember).WithMany().HasForeignKey(x => x.AuthorMemberId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<ChangeRequest>(entity =>
         {
-            entity.ToTable("changerequests");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.RequestedByUserId).HasColumnName("requestedbyuserid");
-            entity.Property(e => e.RequestedForDate).HasColumnName("requestedfordate").HasColumnType("date");
-            entity.Property(e => e.CurrentParent).HasColumnName("currentparent").HasMaxLength(10).IsRequired();
-            entity.Property(e => e.RequestedParent).HasColumnName("requestedparent").HasMaxLength(10).IsRequired();
-            entity.Property(e => e.Status).HasColumnName("status").HasMaxLength(50).IsRequired();
-            entity.Property(e => e.CreatedAt).HasColumnName("createdat").HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.ReviewedAt).HasColumnName("reviewedat");
-            entity.Property(e => e.ReviewedByUserId).HasColumnName("reviewedbyuserid");
-            entity.Property(e => e.Comment).HasColumnName("comment").HasMaxLength(1000);
-            entity.HasIndex(e => e.Status);
-            entity.HasIndex(e => e.RequestedForDate);
-
-            entity.HasOne(e => e.RequestedByUser)
-                .WithMany()
-                .HasForeignKey(e => e.RequestedByUserId)
+            entity.ToTable("change_requests");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.FromDate).HasColumnType("date");
+            entity.Property(x => x.ToDate).HasColumnType("date");
+            entity.Property(x => x.RequestedSide).HasConversion<string>().HasMaxLength(1);
+            entity.Property(x => x.Message).HasMaxLength(2000);
+            entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            entity.HasIndex(x => new { x.FamilyId, x.Status });
+            entity.HasOne(x => x.Family).WithMany().HasForeignKey(x => x.FamilyId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Calendar).WithMany().HasForeignKey(x => x.CalendarId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.RequestedByMember).WithMany().HasForeignKey(x => x.RequestedByMemberId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(e => e.ReviewedByUser)
-                .WithMany()
-                .HasForeignKey(e => e.ReviewedByUserId)
+            entity.HasOne(x => x.ReviewedByMember).WithMany().HasForeignKey(x => x.ReviewedByMemberId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<FamilyInvitation>(entity =>
+        {
+            entity.ToTable("family_invitations");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.LinkTokenHash).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.CodeHash).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.EmailHint).HasMaxLength(320);
+            entity.Property(x => x.Permission).HasConversion<string>().HasMaxLength(20);
+            entity.Property(x => x.Side).HasConversion<string>().HasMaxLength(1);
+            entity.Property(x => x.ConcurrencyToken).IsConcurrencyToken();
+            entity.HasIndex(x => x.LinkTokenHash).IsUnique();
+            entity.HasIndex(x => x.CodeHash).IsUnique();
+            entity.HasIndex(x => new { x.FamilyId, x.ExpiresAt });
+            entity.HasOne(x => x.Family).WithMany().HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.CreatedByMember).WithMany().HasForeignKey(x => x.CreatedByMemberId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.RedeemedByAccount).WithMany().HasForeignKey(x => x.RedeemedByAccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AuditEvent>(entity =>
+        {
+            entity.ToTable("audit_events");
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.ActorType).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Action).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.TargetType).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.TargetId).HasMaxLength(100).IsRequired();
+            entity.Property(x => x.Reason).HasMaxLength(500).IsRequired();
+            entity.Property(x => x.MetadataJson).HasColumnType("jsonb").IsRequired();
+            entity.HasIndex(x => new { x.FamilyId, x.CreatedAt });
+            entity.HasIndex(x => x.CreatedAt);
+            entity.HasOne(x => x.Family).WithMany().HasForeignKey(x => x.FamilyId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(x => x.ActorAccount).WithMany().HasForeignKey(x => x.ActorAccountId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

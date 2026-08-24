@@ -11,7 +11,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./backend/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d CoParentingCalendar" ]
       interval: 10s
@@ -31,12 +30,19 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ASPNETCORE_URLS=${ASPNETCORE_URLS:-http://+:8080}
       - ConnectionStrings__DefaultConnection=Host=selmadb;Database=${POSTGRES_DB:-CoParentingCalendar};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD}
+      - Database__ApplyMigrations=${APPLY_MIGRATIONS:-true}
+      - Database__AllowDestructiveV2Reset=${ALLOW_DESTRUCTIVE_V2_RESET:-false}
       - Oidc__Authority=${OIDC_AUTHORITY}
       - Oidc__ClientId=${OIDC_CLIENT_ID}
       - Oidc__ClientSecret=${OIDC_CLIENT_SECRET}
       - Oidc__CallbackPath=${OIDC_CALLBACK_PATH:-/signin-oidc}
-      - Auth__LocalAdmin__Enabled=${LOCAL_ADMIN_ENABLED:-false}
-      - Auth__LocalAdmin__PasswordHash=${LOCAL_ADMIN_PASSWORD_HASH}
+      - AdminOidc__Authority=${ADMIN_OIDC_AUTHORITY}
+      - AdminOidc__ClientId=${ADMIN_OIDC_CLIENT_ID}
+      - AdminOidc__ClientSecret=${ADMIN_OIDC_CLIENT_SECRET}
+      - AdminOidc__CallbackPath=${ADMIN_OIDC_CALLBACK_PATH:-/signin-oidc-admin}
+      - AdminOidc__RequiredGroup=${ADMIN_OIDC_REQUIRED_GROUP:-selma-platform-admins}
+      - Auth__BreakGlass__Enabled=${BREAK_GLASS_ADMIN_ENABLED:-false}
+      - Auth__BreakGlass__PasswordHash=${BREAK_GLASS_ADMIN_PASSWORD_HASH}
       - ForwardedHeaders__KnownNetworks__0=${FORWARDED_HEADERS_KNOWN_NETWORK:-172.16.0.0/12}
     ports:
       - "3000:8080"

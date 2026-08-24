@@ -19,6 +19,23 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function readCookie(name: string): string | undefined {
+  const prefix = `${encodeURIComponent(name)}=`;
+  return document.cookie
+    .split(";")
+    .map((value) => value.trim())
+    .find((value) => value.startsWith(prefix))
+    ?.slice(prefix.length);
+}
+
+function csrfHeader(path: string): Record<string, string> {
+  const cookieName = path.startsWith("/api/admin")
+    ? "__Host-selma-admin-csrf"
+    : "__Host-selma-csrf";
+  const token = readCookie(cookieName);
+  return token ? { "X-CSRF-TOKEN": decodeURIComponent(token) } : {};
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`${baseUrl()}${path}`, {
     method: "GET",
@@ -31,7 +48,7 @@ export async function apiPost<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = csrfHeader(path);
   const init: RequestInit = {
     method: "POST",
     headers,
@@ -49,7 +66,7 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
   return handleResponse<T>(
     await fetch(`${baseUrl()}${path}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...csrfHeader(path) },
       body: JSON.stringify(body),
       credentials: "include",
     }),
@@ -60,6 +77,7 @@ export async function apiDelete(path: string): Promise<void> {
   return handleResponse<void>(
     await fetch(`${baseUrl()}${path}`, {
       method: "DELETE",
+      headers: csrfHeader(path),
       credentials: "include",
     }),
   );
