@@ -2,7 +2,9 @@
 
 Migreringen `SelmaV2FamiliesAndPlatformAdministration` rensar avsiktligt all befintlig Selma-data: användare, externa identiteter, sessioner, kalenderhistorik, konfiguration, inbjudningar, kommentarer och bytesförfrågningar. Authentik-konton och deployhemligheter ligger utanför databasen och påverkas inte.
 
-Applikationen vägrar köra migreringen om inte `Database__AllowDestructiveV2Reset=true`. Den spärren ersätter inte backup och körbekräftelse.
+Applikationen vägrar köra migreringen om inte `Database__AllowDestructiveV2Reset=true`. Den spärren ersätter inte ett uttryckligt backup-/databorttagningsbeslut och en separat körbekräftelse.
+
+För den initiala v2-lanseringen den 24 augusti 2026 har ägaren uttryckligen bedömt den befintliga Selma-databasen som förbrukningsbar och godkänt att allt innehåll förloras. Databasbackup och återläsningsprov utgår därför endast för denna körning. Beslutet ersätter inte den separata slutbekräftelsen om att starta migreringen och gäller inte framtida driftsättningar med riktig användardata.
 
 ## Före merge/deploy
 
@@ -11,8 +13,8 @@ Applikationen vägrar köra migreringen om inte `Database__AllowDestructiveV2Res
 3. Skapa separat adminprovider/application med MFA, callback `https://selma.widsell.nu/signin-oidc-admin`, scopes `openid profile email` och `groups`-claim.
 4. Lägg admin-OIDC-värden och hemligheter i Dockhand enligt `authentication-oidc.md`.
 5. Pausa Dockhands schemalagda automatiska uppdatering för Selmas appcontainer. Kontrollera i Dockhand att inga uppdateringar körs.
-6. Ta en PostgreSQL-backup och återläs den i en separat tillfällig databas. En backup räknas inte som verifierad förrän återläsningen och grundläggande tabellkontroll har lyckats.
-7. Notera aktuell image-digest, Compose-konfiguration och databasbackupens exakta fil/tidpunkt.
+6. Verifiera att backupbeslutet ovan fortfarande gäller. Om databasen hunnit få värdefull data ska körningen stoppas tills backup och återläsningsprov har genomförts.
+7. Notera aktuell image-digest och Compose-konfiguration.
 8. Begär en uttrycklig slutlig körbekräftelse. Sätt inte reset-flaggan innan den har givits.
 
 ## Kontrollerad körning
@@ -27,4 +29,4 @@ Applikationen vägrar köra migreringen om inte `Database__AllowDestructiveV2Res
 
 ## Rollback
 
-Stoppa appen, återställ den verifierade databasen och starta tidigare image med den noterade digesten. Kör inte EF `Down` som produktionsrollback: v2-migreringen är en ren datanollställning och backupen är den auktoritativa återställningsvägen.
+Stoppa appen och starta tidigare image med den noterade digesten mot en ny tom databas. Eftersom den initiala v2-lanseringen uttryckligen saknar backup kan den inte återställa tidigare Selma-data. Kör inte EF `Down` som produktionsrollback. För alla senare lanseringar med riktig användardata är en verifierad backup den auktoritativa återställningsvägen.

@@ -44,7 +44,7 @@ Eller via Compose efter att nödvändiga OIDC- och databasvariabler har satts:
 docker compose up --build
 ```
 
-En tom databas migreras automatiskt. Om en äldre EF-databas innehåller Selma v1-data stoppar appen den destruktiva v2-migrationen tills `ALLOW_DESTRUCTIVE_V2_RESET=true` uttryckligen sätts. Använd aldrig flaggan i produktion innan Dockhand pausats, backupen verifierats och den slutliga körningen bekräftats.
+En tom databas migreras automatiskt. Om en äldre EF-databas innehåller Selma v1-data stoppar appen den destruktiva v2-migrationen tills `ALLOW_DESTRUCTIVE_V2_RESET=true` uttryckligen sätts. Använd aldrig flaggan i produktion innan Dockhand pausats, den slutliga körningen bekräftats och antingen en backup verifierats eller ägaren uttryckligen dokumenterat att all befintlig data får förloras.
 
 ## Verifiering
 
