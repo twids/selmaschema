@@ -10,6 +10,7 @@ import AdminLoginPage from "./pages/AdminLoginPage";
 import FamilyCalendarPage from "./pages/FamilyCalendarPage";
 import FamilyDashboardPage from "./pages/FamilyDashboardPage";
 import FamilySettingsPage from "./pages/FamilySettingsPage";
+import FamilySetupPage from "./pages/FamilySetupPage";
 import InvitationsPage from "./pages/InvitationsPage";
 import JoinPage from "./pages/JoinPage";
 import LoginPage from "./pages/LoginPage";
@@ -50,6 +51,7 @@ export default function App() {
         <Route path="invitations" element={<InvitationsPage />} />
         <Route path="change-requests" element={<ChangeRequestsPage />} />
         <Route path="settings" element={<FamilySettingsPage />} />
+        <Route path="setup" element={<FamilySetupPage />} />
       </Route>
     </Route>
     <Route path="*" element={<Navigate to="/" replace />} />

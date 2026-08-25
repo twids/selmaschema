@@ -63,11 +63,11 @@ export default function FamilySettingsPage() {
       <Card><CardContent><Typography variant="h6" gutterBottom>Medlemmar</Typography>
         <TextField fullWidth label="Orsak till medlemsändring" value={memberReason} onChange={(e) => setMemberReason(e.target.value)} sx={{ mb: 2 }} />
         <Stack spacing={2}>{members.filter((member) => member.isActive).map((member) => (
-          <Box key={member.id}><Typography>{member.displayName} · {member.permission} · {member.side ? `Hem ${member.side}` : "ingen sida"}</Typography>
+          <Box key={member.id}><Typography>{member.displayName} · {member.permission} · {member.side === "A" ? family.sideALabel : member.side === "B" ? family.sideBLabel : "inget hem"}</Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 1 }}>
               {member.permission !== "Owner" && <><Button size="small" disabled={!memberReason.trim()} onClick={() => void familyApi.updateMember(familyId, member.id, "Editor", member.side, memberReason).then(reload)}>Editor</Button><Button size="small" disabled={!memberReason.trim()} onClick={() => void familyApi.updateMember(familyId, member.id, "Viewer", member.side, memberReason).then(reload)}>Viewer</Button></>}
-              <Button size="small" disabled={!memberReason.trim()} onClick={() => void familyApi.updateMember(familyId, member.id, member.permission, "A", memberReason).then(reload)}>Hem A</Button>
-              <Button size="small" disabled={!memberReason.trim()} onClick={() => void familyApi.updateMember(familyId, member.id, member.permission, "B", memberReason).then(reload)}>Hem B</Button>
+              <Button size="small" disabled={!memberReason.trim()} onClick={() => void familyApi.updateMember(familyId, member.id, member.permission, "A", memberReason).then(reload)}>{family.sideALabel}</Button>
+              <Button size="small" disabled={!memberReason.trim()} onClick={() => void familyApi.updateMember(familyId, member.id, member.permission, "B", memberReason).then(reload)}>{family.sideBLabel}</Button>
               <Button size="small" disabled={!memberReason.trim()} onClick={() => void familyApi.updateMember(familyId, member.id, member.permission, null, memberReason).then(reload)}>Ingen sida</Button>
               {member.permission !== "Owner" && <Button size="small" color="warning" disabled={!memberReason.trim()} onClick={() => void familyApi.transferOwnership(familyId, member.id, memberReason).then(reload)}>Överför ägarskap</Button>}
             </Stack>
