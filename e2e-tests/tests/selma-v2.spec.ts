@@ -22,35 +22,42 @@ test('creates a family, configures schedules, joins a parent, and audits admin s
   await expect(page.getByRole('heading', { name: 'Välkommen till Selma' })).toBeVisible();
   await page.getByLabel('Familjens namn').fill(familyName);
   await page.getByRole('button', { name: 'Skapa familj' }).click();
-  await expect(page.getByRole('heading', { name: familyName })).toBeVisible();
+  await expect(page.getByRole('heading', { name: `Kom igång med ${familyName}` })).toBeVisible();
+
+  await page.getByRole('radio', { name: 'Hem A' }).click();
+  await page.getByRole('button', { name: 'Spara och fortsätt' }).click();
+  await expect(page.getByRole('heading', { name: '2. Barn och kalender' })).toBeVisible();
+  await page.getByLabel('Barnets visningsnamn').fill('Barnet');
+  await page.getByRole('button', { name: 'Lägg till barn' }).click();
+  await expect(page.getByText(/Barnet är tillagd i Boendeschema/)).toBeVisible();
+  await page.getByRole('button', { name: 'Nästa: boendeschema' }).click();
+  await page.getByRole('button', { name: 'Förhandsvisa sex veckor' }).click();
+  await expect(page.getByText('Så här blir schemat')).toBeVisible();
+  await expect(page.getByRole('gridcell')).toHaveCount(42);
+  await page.getByRole('button', { name: 'Aktivera schema' }).click();
+
+  await expect(page.getByRole('heading', { name: '4. Bjud in en annan vuxen' })).toBeVisible();
+  await page.getByLabel('Tillhör hem').click();
+  await page.getByRole('option', { name: 'Hem B' }).click();
+  await page.getByLabel('E-postledtråd (valfri)').fill('other@e2e.invalid');
+  await page.getByRole('button', { name: 'Skapa inbjudan' }).click();
+  const code = await page.getByText(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/).textContent();
+  expect(code).toBeTruthy();
+  await page.getByRole('button', { name: 'Fortsätt' }).click();
+  await expect(page.getByText('Familjen är redo att användas')).toBeVisible();
+  await page.getByRole('link', { name: 'Till familjeöversikten' }).click();
 
   await page.getByRole('link', { name: 'Inställningar' }).click();
-  await page.getByLabel('Visningsnamn').fill('Barnet');
-  await page.getByRole('button', { name: 'Lägg till barn' }).click();
-  await expect(page.getByText(/Barnet · Boendeschema/)).toBeVisible();
   await page.getByLabel('Namn', { exact: true }).fill('Lovschema');
   await page.getByRole('button', { name: 'Ny kalender' }).click();
   await expect(page.getByText(/Lovschema · 0 barn/)).toBeVisible();
 
   await page.getByRole('link', { name: 'Översikt' }).click();
   await page.getByText('Boendeschema', { exact: true }).click();
-  await page.getByRole('button', { name: 'Förhandsvisa 6 veckor' }).click();
-  await expect(page.getByText(/Förhandsvisning giltig/)).toBeVisible();
-  await page.getByRole('button', { name: 'Aktivera från valt datum' }).click();
-
-  await page.getByLabel('Mall').click();
-  await page.getByRole('option', { name: '2-2-3' }).click();
-  await page.getByLabel('Gäller från').fill(futureDate(14));
-  await page.getByRole('button', { name: 'Förhandsvisa 6 veckor' }).click();
-  await page.getByRole('button', { name: 'Aktivera från valt datum' }).click();
-
-  await page.getByRole('link', { name: 'Bjud in' }).click();
-  await page.getByLabel('Schemasida').click();
-  await page.getByRole('option', { name: 'Hem B' }).click();
-  await page.getByLabel('E-postledtråd (valfri)').fill('other@e2e.invalid');
-  await page.getByRole('button', { name: 'Skapa inbjudan' }).click();
-  const code = await page.getByText(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/).textContent();
-  expect(code).toBeTruthy();
+  await page.getByRole('button', { name: /2-2-3/ }).click();
+  await page.getByLabel('Schemat börjar').fill(futureDate(14));
+  await page.getByRole('button', { name: 'Förhandsvisa sex veckor' }).click();
+  await page.getByRole('button', { name: 'Aktivera schema' }).click();
 
   const secondApi = await playwright.request.newContext({ baseURL: apiURL });
   const login = await secondApi.post('/api/auth/test-login', {

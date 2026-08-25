@@ -6,44 +6,22 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   familyApi, scheduleApi, type CalendarDayDto, type CalendarMonthDto, type FamilyDto,
-  type ScheduleDraft, type SchedulePreviewDto, type ScheduleTemplate, type ScheduleVersionDto,
+  type ScheduleVersionDto,
 } from "../api/v2";
 import type { ScheduleSide } from "../auth/AuthContext";
-
-const templateNames: Record<ScheduleTemplate, string> = {
-  AlternatingWeeks: "Varannan vecka",
-  TwoTwoThree: "2-2-3",
-  TwoTwoFiveFive: "2-2-5-5",
-  ThreeFourFourThree: "3-4-4-3",
-  PrimaryAlternateWeekends: "Primärt boende + varannan helg",
-};
-
-const weekdays = [
-  { value: 1, label: "Måndag" }, { value: 2, label: "Tisdag" }, { value: 3, label: "Onsdag" },
-  { value: 4, label: "Torsdag" }, { value: 5, label: "Fredag" }, { value: 6, label: "Lördag" },
-  { value: 0, label: "Söndag" },
-];
-
-function isoDate(date: Date) { return date.toISOString().slice(0, 10); }
+import ScheduleEditor from "../components/ScheduleEditor";
 
 export default function FamilyCalendarPage() {
   const { familyId = "", calendarId = "" } = useParams();
   const now = new Date();
-  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
   const [family, setFamily] = useState<FamilyDto | null>(null);
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [data, setData] = useState<CalendarMonthDto | null>(null);
   const [versions, setVersions] = useState<ScheduleVersionDto[]>([]);
-  const [preview, setPreview] = useState<SchedulePreviewDto | null>(null);
   const [selected, setSelected] = useState<CalendarDayDto | null>(null);
   const [commentText, setCommentText] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [draft, setDraft] = useState<ScheduleDraft>({
-    template: "AlternatingWeeks", anchorDate: isoDate(tomorrow), anchorSide: "A", effectiveFrom: isoDate(tomorrow),
-    parameters: { weekendStartsOn: 5, weekendLengthDays: 3, recurringWeekday: null, recurringWeekdayOvernight: false },
-    changeoverTime: null, changeoverPlace: null,
-  });
   const calendar = family?.calendars.find((item) => item.id === calendarId);
   const canEdit = family?.myPermission !== "Viewer";
   const isOwner = family?.myPermission === "Owner";
@@ -57,21 +35,10 @@ export default function FamilyCalendarPage() {
     setFamily(nextFamily); setData(nextMonth); setVersions(nextVersions);
   }, [familyId, calendarId, year, month]);
   useEffect(() => { void load().catch(() => setError("Kalendern kunde inte laddas.")); }, [load]);
-  useEffect(() => { setPreview(null); }, [draft]);
 
   const days = useMemo(() => data?.days ?? [], [data]);
   const navigateMonth = (delta: number) => {
     const next = new Date(year, month - 1 + delta, 1); setYear(next.getFullYear()); setMonth(next.getMonth() + 1);
-  };
-  const previewDraft = async () => {
-    setError(null);
-    try { setPreview(await scheduleApi.preview(familyId, calendarId, draft)); }
-    catch { setError("Schemat kunde inte förhandsvisas. Kontrollera startdatum och detaljnivå."); }
-  };
-  const activate = async () => {
-    setError(null);
-    try { await scheduleApi.create(familyId, calendarId, draft); setPreview(null); await load(); }
-    catch { setError("Schemat kunde inte aktiveras. Förhandsvisa samma inställningar igen."); }
   };
   const saveDay = async () => {
     if (!selected || !canEdit) return;
@@ -114,21 +81,7 @@ export default function FamilyCalendarPage() {
       {days.map((day) => <Card key={day.date} variant="outlined" sx={{ cursor: "pointer", bgcolor: day.side === "A" ? "primary.50" : day.side === "B" ? "secondary.50" : undefined, borderWidth: day.isOverride ? 2 : 1 }} onClick={() => setSelected({ ...day })}><CardContent sx={{ p: 1.5 }}><Typography fontWeight={700}>{new Date(`${day.date}T12:00:00`).getDate()}</Typography><Typography variant="body2">{day.side ? (day.side === "A" ? family?.sideALabel : family?.sideBLabel) : "Ej tilldelad"}</Typography><Typography variant="caption">{[day.isOverride && "Manuellt", day.isVab && "VAB", day.specialStatus, day.comments.length > 0 && `${day.comments.length} kommentar(er)`].filter(Boolean).join(" · ")}</Typography></CardContent></Card>)}
     </Box>
 
-    {isOwner && <Card><CardContent><Stack spacing={2}>
-      <Typography variant="h5">Nytt schema</Typography><Alert severity="info">Förhandsvisa först och välj ett framtida startdatum. Tidigare versioner och undantag bevaras.</Alert>
-      <FormControl><InputLabel id="schedule-template-label">Mall</InputLabel><Select labelId="schedule-template-label" label="Mall" value={draft.template} onChange={(e) => setDraft({ ...draft, template: e.target.value as ScheduleTemplate })}>{Object.entries(templateNames).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</Select></FormControl>
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-        <TextField type="date" label="Ankardatum" InputLabelProps={{ shrink: true }} value={draft.anchorDate} onChange={(e) => setDraft({ ...draft, anchorDate: e.target.value })} />
-        <FormControl sx={{ minWidth: 160 }}><InputLabel id="schedule-anchor-side-label">Startande sida</InputLabel><Select labelId="schedule-anchor-side-label" label="Startande sida" value={draft.anchorSide} onChange={(e) => setDraft({ ...draft, anchorSide: e.target.value as ScheduleSide })}><MenuItem value="A">{family?.sideALabel}</MenuItem><MenuItem value="B">{family?.sideBLabel}</MenuItem></Select></FormControl>
-        <TextField type="date" label="Gäller från" InputLabelProps={{ shrink: true }} value={draft.effectiveFrom} onChange={(e) => setDraft({ ...draft, effectiveFrom: e.target.value })} />
-      </Stack>
-      {draft.template === "PrimaryAlternateWeekends" && <Stack spacing={2}><Stack direction={{ xs: "column", sm: "row" }} spacing={2}><FormControl sx={{ minWidth: 190 }}><InputLabel id="schedule-weekend-start-label">Helgen börjar</InputLabel><Select labelId="schedule-weekend-start-label" label="Helgen börjar" value={draft.parameters.weekendStartsOn} onChange={(e) => setDraft({ ...draft, parameters: { ...draft.parameters, weekendStartsOn: Number(e.target.value) } })}>{weekdays.map((day) => <MenuItem key={day.value} value={day.value}>{day.label}</MenuItem>)}</Select></FormControl><TextField type="number" label="Helgens dagar" inputProps={{ min: 1, max: 7 }} value={draft.parameters.weekendLengthDays} onChange={(e) => setDraft({ ...draft, parameters: { ...draft.parameters, weekendLengthDays: Number(e.target.value) } })} /></Stack><FormControl><InputLabel id="schedule-recurring-weekday-label">Återkommande vardag</InputLabel><Select labelId="schedule-recurring-weekday-label" label="Återkommande vardag" value={draft.parameters.recurringWeekday ?? ""} onChange={(e) => setDraft({ ...draft, parameters: { ...draft.parameters, recurringWeekday: String(e.target.value) === "" ? null : Number(e.target.value) } })}><MenuItem value="">Ingen</MenuItem>{weekdays.slice(0, 5).map((day) => <MenuItem key={day.value} value={day.value}>{day.label}</MenuItem>)}</Select></FormControl><FormControlLabel control={<Checkbox checked={draft.parameters.recurringWeekdayOvernight} disabled={draft.parameters.recurringWeekday == null} onChange={(e) => setDraft({ ...draft, parameters: { ...draft.parameters, recurringWeekdayOvernight: e.target.checked } })} />} label="Vardagsbesöket är en övernattning" /></Stack>}
-      {family?.exchangeDetailLevel !== "Day" && <TextField type="time" label="Bytestid" InputLabelProps={{ shrink: true }} value={draft.changeoverTime ?? ""} onChange={(e) => setDraft({ ...draft, changeoverTime: e.target.value || null })} />}
-      {family?.exchangeDetailLevel === "DayTimeAndPlace" && <TextField label="Bytesplats" value={draft.changeoverPlace ?? ""} onChange={(e) => setDraft({ ...draft, changeoverPlace: e.target.value || null })} />}
-      <Stack direction="row" spacing={2}><Button variant="outlined" onClick={() => void previewDraft()}>Förhandsvisa 6 veckor</Button><Button variant="contained" disabled={!preview} onClick={() => void activate()}>Aktivera från valt datum</Button></Stack>
-      {preview && <Box><Typography fontWeight={700}>Förhandsvisning giltig till {new Date(preview.validUntil).toLocaleTimeString("sv-SE")}</Typography><Typography>{preview.days.slice(0, 14).map((day) => day.side ?? "–").join(" · ")}</Typography></Box>}
-      <Typography variant="h6">Historik</Typography>{versions.length === 0 ? <Typography color="text.secondary">Inget schema är aktiverat.</Typography> : versions.map((version) => <Typography key={version.id}>{templateNames[version.template]} · från {version.effectiveFrom}</Typography>)}
-    </Stack></CardContent></Card>}
+    {isOwner && family && <ScheduleEditor family={family} calendarId={calendarId} versions={versions} onActivated={async () => { await load(); }} />}
 
     <Dialog open={selected !== null} onClose={() => setSelected(null)} fullWidth maxWidth="sm">
       <DialogTitle>{selected?.date}</DialogTitle>

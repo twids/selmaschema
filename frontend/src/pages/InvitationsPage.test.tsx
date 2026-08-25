@@ -3,12 +3,13 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import InvitationsPage from "./InvitationsPage";
 
-const mocks = vi.hoisted(() => ({ invitations: vi.fn(), createInvitation: vi.fn(), revokeInvitation: vi.fn() }));
-vi.mock("../api/v2", () => ({ familyApi: { invitations: mocks.invitations, createInvitation: mocks.createInvitation, revokeInvitation: mocks.revokeInvitation } }));
+const mocks = vi.hoisted(() => ({ get: vi.fn(), invitations: vi.fn(), createInvitation: vi.fn(), revokeInvitation: vi.fn() }));
+vi.mock("../api/v2", () => ({ familyApi: { get: mocks.get, invitations: mocks.invitations, createInvitation: mocks.createInvitation, revokeInvitation: mocks.revokeInvitation } }));
 
 describe("InvitationsPage v2", () => {
   beforeEach(() => {
     mocks.invitations.mockResolvedValue([]);
+    mocks.get.mockResolvedValue({ sideALabel: "Hos Tomas", sideBLabel: "Hos Anna" });
     mocks.createInvitation.mockResolvedValue({ invitation: { id: "i" }, link: "https://selma.test/join/token", code: "ABCD-EFGH" });
     Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
   });

@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Card, CardActionArea, CardContent, Chip, CircularProgress, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Card, CardActionArea, CardContent, Chip, CircularProgress, LinearProgress, Stack, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { familyApi, type FamilyDto } from "../api/v2";
@@ -17,10 +17,12 @@ export default function FamilyDashboardPage() {
   if (!family) return <CircularProgress />;
 
   const setup = [
-    { done: family.mySide !== null, label: "Välj vilken sida du tillhör" },
-    { done: family.activeChildren > 0, label: "Lägg till barn" },
-    { done: family.hasActiveSchedule, label: "Förhandsvisa och aktivera schema" },
+    { done: family.mySide !== null, label: "Namnge hemmen och välj ditt hem" },
+    { done: family.activeChildren > 0, label: "Lägg till minst ett barn" },
+    { done: family.hasActiveSchedule, label: "Granska och aktivera ett boendeschema" },
   ];
+  const completedSetupSteps = setup.filter((step) => step.done).length;
+  const nextSetupStep = setup.find((step) => !step.done);
 
   return (
     <Stack spacing={4}>
@@ -29,10 +31,21 @@ export default function FamilyDashboardPage() {
         <Typography color="text.secondary">{family.sideALabel} · {family.sideBLabel} · {family.timeZoneId}</Typography>
       </Box>
       {family.myPermission === "Owner" && setup.some((step) => !step.done) && (
-        <Alert severity="info" action={<Button component={Link} to={`/families/${familyId}/settings`}>Fortsätt konfigurera</Button>}>
-          <Typography fontWeight={600}>Kom igång</Typography>
-          {setup.map((step) => <Chip key={step.label} size="small" color={step.done ? "success" : "default"} label={`${step.done ? "✓" : "○"} ${step.label}`} sx={{ mr: 1, mt: 1 }} />)}
-        </Alert>
+        <Card variant="outlined" sx={{ borderColor: "primary.main" }}>
+          <CardContent>
+            <Stack spacing={2}>
+              <Box>
+                <Typography variant="h6">Fortsätt konfigurera familjen</Typography>
+                <Typography color="text.secondary">Nästa steg: {nextSetupStep?.label}</Typography>
+              </Box>
+              <LinearProgress variant="determinate" value={(completedSetupSteps / setup.length) * 100} aria-label={`${completedSetupSteps} av ${setup.length} steg klara`} />
+              <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                {setup.map((step) => <Chip key={step.label} size="small" color={step.done ? "success" : "default"} label={`${step.done ? "✓" : "○"} ${step.label}`} />)}
+              </Stack>
+              <Box><Button variant="contained" component={Link} to={`/families/${familyId}/setup`}>Fortsätt steg för steg</Button></Box>
+            </Stack>
+          </CardContent>
+        </Card>
       )}
       <Box>
         <Typography variant="h5" gutterBottom>Boendekalendrar</Typography>
