@@ -17,12 +17,19 @@ export default function OnboardingPage() {
 
   const createFamily = async () => {
     setBusy(true); setError(null);
+    let family: Awaited<ReturnType<typeof familyApi.create>>;
     try {
-      const family = await familyApi.create(familyName);
-      await refresh();
-      navigate(`/families/${family.id}`);
+      family = await familyApi.create(familyName);
     } catch {
       setError("Familjen kunde inte skapas. Kontrollera namnet och försök igen.");
+      setBusy(false);
+      return;
+    }
+    try {
+      await refresh();
+      navigate(`/families/${family.id}/setup`);
+    } catch {
+      setError("Familjen skapades, men sidan kunde inte uppdateras. Ladda om sidan för att fortsätta konfigurationen.");
     } finally { setBusy(false); }
   };
 

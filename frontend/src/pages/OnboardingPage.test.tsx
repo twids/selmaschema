@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthContext } from "../auth/AuthContext";
 import OnboardingPage from "./OnboardingPage";
@@ -12,11 +12,12 @@ describe("OnboardingPage", () => {
   it("offers create family and join by code", async () => {
     mocks.create.mockResolvedValue({ id: "family" });
     const refresh = vi.fn().mockResolvedValue(undefined);
-    render(<MemoryRouter><AuthContext.Provider value={{ account: { id: "a", email: "x", displayName: "X" }, memberships: [], isAuthenticated: true, isLoading: false, startOidcLogin: () => undefined, logout: async () => undefined, refresh }}><OnboardingPage /></AuthContext.Provider></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/onboarding"]}><AuthContext.Provider value={{ account: { id: "a", email: "x", displayName: "X" }, memberships: [], isAuthenticated: true, isLoading: false, startOidcLogin: () => undefined, logout: async () => undefined, refresh }}><Routes><Route path="/onboarding" element={<OnboardingPage />} /><Route path="/families/:familyId/setup" element={<div>Familjeguiden</div>} /></Routes></AuthContext.Provider></MemoryRouter>);
     expect(screen.getByRole("heading", { name: "Skapa familj" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Gå med med kod" })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Familjens namn"), { target: { value: "Ny familj" } });
     fireEvent.click(screen.getByRole("button", { name: "Skapa familj" }));
     await waitFor(() => expect(mocks.create).toHaveBeenCalledWith("Ny familj"));
+    expect(await screen.findByText("Familjeguiden")).toBeInTheDocument();
   });
 });
