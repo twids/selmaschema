@@ -11,9 +11,10 @@ export default function OnboardingPage() {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [createdFamilyId, setCreatedFamilyId] = useState<string | null>(null);
 
   const activeMembership = memberships.find((membership) => membership.status === "Active");
-  if (activeMembership) return <Navigate to={`/families/${activeMembership.familyId}`} replace />;
+  if (activeMembership && !createdFamilyId) return <Navigate to={`/families/${activeMembership.familyId}`} replace />;
 
   const createFamily = async () => {
     setBusy(true); setError(null);
@@ -25,6 +26,7 @@ export default function OnboardingPage() {
       setBusy(false);
       return;
     }
+    setCreatedFamilyId(family.id);
     try {
       await refresh();
       navigate(`/families/${family.id}/setup`);
